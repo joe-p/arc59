@@ -1,0 +1,99 @@
+{
+  "name": "ARC59",
+  "desc": "",
+  "methods": [
+    {
+      "name": "optRouterIn",
+      "desc": "Opt the ARC59 router into the ASA. This is required before this app can be used to send the ASA to anyone.",
+      "args": [
+        {
+          "name": "asa",
+          "type": "uint64",
+          "desc": "The ASA to opt into"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      }
+    },
+    {
+      "name": "getAssetSendInfo",
+      "args": [
+        {
+          "name": "receiver",
+          "type": "address",
+          "desc": "The address to send the asset to"
+        },
+        {
+          "name": "asset",
+          "type": "uint64",
+          "desc": "The asset to send"
+        }
+      ],
+      "returns": {
+        "type": "(uint64,uint64)",
+        "desc": "The number of itxns sent and the MBR required to send the asset to the receiver"
+      }
+    },
+    {
+      "name": "sendAsset",
+      "desc": "Send an asset to the receiver",
+      "args": [
+        {
+          "name": "axfer",
+          "type": "axfer",
+          "desc": "The asset transfer to this app"
+        },
+        {
+          "name": "receiver",
+          "type": "address",
+          "desc": "The address to send the asset to"
+        }
+      ],
+      "returns": {
+        "type": "address",
+        "desc": "The address that the asset was sent to (either the receiver or their vault)"
+      }
+    },
+    {
+      "name": "claim",
+      "desc": "Claim an ASA from the vault",
+      "args": [
+        {
+          "name": "asa",
+          "type": "uint64",
+          "desc": "The ASA to claim"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      }
+    },
+    {
+      "name": "burn",
+      "desc": "Burn the ASA from the vault with ARC54",
+      "args": [
+        {
+          "name": "asa",
+          "type": "uint64",
+          "desc": "The ASA to burn"
+        },
+        {
+          "name": "arc54App",
+          "type": "uint64",
+          "desc": "The ARC54 app to burn the ASA to"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      }
+    },
+    {
+      "name": "createApplication",
+      "args": [],
+      "returns": {
+        "type": "void"
+      }
+    }
+  ]
+}

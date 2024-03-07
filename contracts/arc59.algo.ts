@@ -1,47 +1,221 @@
+/* eslint-disable max-classes-per-file */
+
+// eslint-disable-next-line import/no-unresolved, import/extensions
 import { Contract } from '@algorandfoundation/tealscript';
 
-// eslint-disable-next-line no-unused-vars
-class Arc59 extends Contract {
+class ControlledAddress extends Contract {
+  @allow.create('DeleteApplication')
+  new(): Address {
+    sendPayment({
+      rekeyTo: this.txn.sender,
+    });
+
+    return this.app.address;
+  }
+}
+
+export class ARC59 extends Contract {
+  vaults = BoxMap<Address, Address>();
+
   /**
-   * Calculates the sum of two numbers
+   * Opt the ARC59 router into the ASA. This is required before this app can be used to send the ASA to anyone.
    *
-   * @param a
-   * @param b
-   * @returns The sum of a and b
+   * @param asa The ASA to opt into
    */
-  private getSum(a: number, b: number): number {
-    return a + b;
+  optRouterIn(asa: AssetID): void {
+    sendAssetTransfer({
+      assetReceiver: this.app.address,
+      assetAmount: 0,
+      xferAsset: asa,
+    });
   }
 
   /**
-   * Calculates the difference between two numbers
-   *
-   * @param a
-   * @param b
-   * @returns The difference between a and b.
+   * Gets an existing or create a vault for the given address
    */
-  private getDifference(a: number, b: number): number {
-    return a >= b ? a - b : b - a;
+  private getOrCreateVault(addr: Address): Address {
+    if (this.vaults(addr).exists) return this.vaults(addr).value;
+
+    const vault = sendMethodCall<typeof ControlledAddress.prototype.new>({
+      onCompletion: OnCompletion.DeleteApplication,
+      approvalProgram: ControlledAddress.approvalProgram(),
+      clearStateProgram: ControlledAddress.clearProgram(),
+    });
+
+    this.vaults(addr).value = vault;
+
+    return vault;
   }
 
   /**
-   * A method that takes two numbers and does either addition or subtraction
    *
-   * @param a The first number
-   * @param b The second number
-   * @param operation The operation to perform. Can be either 'sum' or 'difference'
+   * @param receiver The address to send the asset to
+   * @param asset The asset to send
    *
-   * @returns The result of the operation
+   * @returns The number of itxns sent and the MBR required to send the asset to the receiver
    */
-  doMath(a: number, b: number, operation: string): number {
-    let result: number;
+  getAssetSendInfo(receiver: Address, asset: AssetID): { itxns: uint64; mbr: uint64 } {
+    const info: { itxns: uint64; mbr: uint64 } = { itxns: 1, mbr: 0 };
 
-    if (operation === 'sum') {
-      result = this.getSum(a, b);
-    } else if (operation === 'difference') {
-      result = this.getDifference(a, b);
-    } else throw Error('Invalid operation');
+    if (receiver.isOptedInToAsset(asset)) return info;
 
-    return result;
+    if (!this.vaults(receiver).exists) {
+      // Two itxns to create vault (create + rekey)
+      // One itxns to send MBR
+      // One itxn to opt in
+      info.itxns += 4;
+
+      // Calculate the MBR for the vault box
+      const preMBR = globals.currentApplicationAddress.minBalance;
+      this.vaults(receiver).value = globals.zeroAddress;
+      const boxMbrDelta = globals.currentApplicationAddress.minBalance - preMBR;
+      this.vaults(receiver).delete();
+
+      // MBR = MBR for the box + min balance for the vault + ASA MBR
+      info.mbr = boxMbrDelta + globals.minBalance + globals.assetOptInMinBalance;
+
+      return info;
+    }
+
+    const vault = this.vaults(receiver).value;
+
+    if (!vault.isOptedInToAsset(asset)) {
+      // One itxn to opt in
+      info.itxns += 1;
+
+      if (!(vault.balance >= vault.minBalance + globals.assetOptInMinBalance)) {
+        // One itxn to send MBR
+        info.itxns += 1;
+
+        // MBR = ASA MBR
+        info.mbr = globals.assetOptInMinBalance;
+      }
+    }
+
+    return info;
+  }
+
+  /**
+   * Send an asset to the receiver
+   *
+   * @param receiver The address to send the asset to
+   * @param axfer The asset transfer to this app
+   *
+   * @returns The address that the asset was sent to (either the receiver or their vault)
+   */
+  sendAsset(axfer: AssetTransferTxn, receiver: Address): Address {
+    verifyAssetTransferTxn(axfer, {
+      assetReceiver: this.app.address,
+    });
+
+    // If the receiver is opted in, send directly to their account
+    if (receiver.isOptedInToAsset(axfer.xferAsset)) {
+      sendAssetTransfer({
+        assetReceiver: receiver,
+        assetAmount: axfer.assetAmount,
+        xferAsset: axfer.xferAsset,
+      });
+
+      return receiver;
+    }
+
+    const vaultExisted = this.vaults(receiver).exists;
+    const vault = this.getOrCreateVault(receiver);
+
+    if (!vault.isOptedInToAsset(axfer.xferAsset)) {
+      let vaultMbrDelta = globals.assetOptInMinBalance;
+      if (!vaultExisted) vaultMbrDelta += globals.minBalance;
+
+      // Ensure the vault has enough balance to opt in
+      if (vault.balance < vault.minBalance + vaultMbrDelta) {
+        sendPayment({
+          receiver: vault,
+          amount: vaultMbrDelta,
+        });
+      }
+
+      // Opt the vault in
+      sendAssetTransfer({
+        sender: vault,
+        assetReceiver: vault,
+        assetAmount: 0,
+        xferAsset: axfer.xferAsset,
+      });
+    }
+
+    // Transfer the asset to the vault
+    sendAssetTransfer({
+      assetReceiver: vault,
+      assetAmount: axfer.assetAmount,
+      xferAsset: axfer.xferAsset,
+    });
+
+    return vault;
+  }
+
+  /**
+   * Claim an ASA from the vault
+   *
+   * @param asa The ASA to claim
+   */
+  claim(asa: AssetID): void {
+    const vault = this.vaults(this.txn.sender).value;
+
+    const preMBR = vault.minBalance;
+
+    sendAssetTransfer({
+      sender: vault,
+      assetReceiver: this.txn.sender,
+      assetAmount: vault.assetBalance(asa),
+      xferAsset: asa,
+      assetCloseTo: this.txn.sender,
+    });
+
+    sendPayment({
+      sender: vault,
+      receiver: this.txn.sender,
+      amount: preMBR - vault.minBalance,
+    });
+  }
+
+  /**
+   * Burn the ASA from the vault with ARC54
+   *
+   * @param asa The ASA to burn
+   * @param arc54App The ARC54 app to burn the ASA to
+   */
+  burn(asa: AssetID, arc54App: AppID) {
+    const vault = this.vaults(this.txn.sender).value;
+
+    // opt the arc54 app into the ASA if not already opted in
+    if (!arc54App.address.isOptedInToAsset(asa)) {
+      sendPayment({
+        receiver: arc54App.address,
+        amount: globals.assetOptInMinBalance,
+      });
+
+      sendMethodCall<[AssetReference], void>({
+        sender: vault,
+        name: 'arc54_optIntoASA',
+        methodArgs: [asa],
+        applicationID: arc54App,
+      });
+    }
+
+    const preMBR = vault.minBalance;
+
+    sendAssetTransfer({
+      sender: vault,
+      assetReceiver: arc54App.address,
+      assetAmount: vault.assetBalance(asa),
+      xferAsset: asa,
+      assetCloseTo: arc54App.address,
+    });
+
+    sendPayment({
+      sender: vault,
+      receiver: this.txn.sender,
+      amount: preMBR - vault.minBalance,
+    });
   }
 }
