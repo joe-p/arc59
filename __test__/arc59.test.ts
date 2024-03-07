@@ -15,7 +15,7 @@ async function sendAsset(
   receiver: string,
   algod: algosdk.Algodv2
 ) {
-  const arc12RouterAddress = (await appClient.appClient.getAppReference()).appAddress;
+  const arc59RouterAddress = (await appClient.appClient.getAppReference()).appAddress;
 
   const sendInfo = (await appClient.getAssetSendInfo({ asset: assetId, receiver })).return;
 
@@ -27,7 +27,7 @@ async function sendAsset(
   if (mbr) {
     const mbrPayment = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
       from: sender,
-      to: arc12RouterAddress,
+      to: arc59RouterAddress,
       amount: mbr,
       suggestedParams: await algod.getTransactionParams().do(),
     });
@@ -37,7 +37,7 @@ async function sendAsset(
 
   const axfer = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
     from: sender,
-    to: arc12RouterAddress,
+    to: arc59RouterAddress,
     assetIndex: assetId,
     amount: 1,
     suggestedParams: await algod.getTransactionParams().do(),
@@ -48,7 +48,7 @@ async function sendAsset(
     .execute();
 }
 
-describe('Arc12', () => {
+describe('Arc59', () => {
   let appClient: Arc59Client;
   let assetId: number;
   let alice: algosdk.Account;
