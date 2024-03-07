@@ -22,7 +22,7 @@ export class ARC59 extends Contract {
    *
    * @param asa The ASA to opt into
    */
-  optRouterIn(asa: AssetID): void {
+  arc59_optRouterIn(asa: AssetID): void {
     sendAssetTransfer({
       assetReceiver: this.app.address,
       assetAmount: 0,
@@ -54,7 +54,7 @@ export class ARC59 extends Contract {
    *
    * @returns The number of itxns sent and the MBR required to send the asset to the receiver
    */
-  getAssetSendInfo(receiver: Address, asset: AssetID): { itxns: uint64; mbr: uint64 } {
+  arc59_getAssetSendInfo(receiver: Address, asset: AssetID): { itxns: uint64; mbr: uint64 } {
     const info: { itxns: uint64; mbr: uint64 } = { itxns: 1, mbr: 0 };
 
     if (receiver.isOptedInToAsset(asset)) return info;
@@ -103,7 +103,7 @@ export class ARC59 extends Contract {
    *
    * @returns The address that the asset was sent to (either the receiver or their vault)
    */
-  sendAsset(axfer: AssetTransferTxn, receiver: Address): Address {
+  arc59_sendAsset(axfer: AssetTransferTxn, receiver: Address): Address {
     verifyAssetTransferTxn(axfer, {
       assetReceiver: this.app.address,
     });
@@ -158,7 +158,7 @@ export class ARC59 extends Contract {
    *
    * @param asa The ASA to claim
    */
-  claim(asa: AssetID): void {
+  arc59_claim(asa: AssetID): void {
     const vault = this.vaults(this.txn.sender).value;
 
     const preMBR = vault.minBalance;
@@ -184,7 +184,7 @@ export class ARC59 extends Contract {
    * @param asa The ASA to burn
    * @param arc54App The ARC54 app to burn the ASA to
    */
-  burn(asa: AssetID, arc54App: AppID) {
+  arc59_burn(asa: AssetID, arc54App: AppID) {
     const vault = this.vaults(this.txn.sender).value;
 
     // opt the arc54 app into the ASA if not already opted in

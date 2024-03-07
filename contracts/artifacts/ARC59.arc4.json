@@ -3,7 +3,7 @@
   "desc": "",
   "methods": [
     {
-      "name": "optRouterIn",
+      "name": "arc59_optRouterIn",
       "desc": "Opt the ARC59 router into the ASA. This is required before this app can be used to send the ASA to anyone.",
       "args": [
         {
@@ -17,7 +17,7 @@
       }
     },
     {
-      "name": "getAssetSendInfo",
+      "name": "arc59_getAssetSendInfo",
       "args": [
         {
           "name": "receiver",
@@ -36,7 +36,7 @@
       }
     },
     {
-      "name": "sendAsset",
+      "name": "arc59_sendAsset",
       "desc": "Send an asset to the receiver",
       "args": [
         {
@@ -56,7 +56,7 @@
       }
     },
     {
-      "name": "claim",
+      "name": "arc59_claim",
       "desc": "Claim an ASA from the vault",
       "args": [
         {
@@ -70,7 +70,7 @@
       }
     },
     {
-      "name": "burn",
+      "name": "arc59_burn",
       "desc": "Burn the ASA from the vault with ARC54",
       "args": [
         {

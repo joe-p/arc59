@@ -21,23 +21,23 @@ switch *call_NoOp *NOT_IMPLEMENTED *NOT_IMPLEMENTED *NOT_IMPLEMENTED *NOT_IMPLEM
 *NOT_IMPLEMENTED:
 	err
 
-// optRouterIn(uint64)void
-*abi_route_optRouterIn:
+// arc59_optRouterIn(uint64)void
+*abi_route_arc59_optRouterIn:
 	// asa: uint64
 	txna ApplicationArgs 1
 	btoi
 
-	// execute optRouterIn(uint64)void
-	callsub optRouterIn
+	// execute arc59_optRouterIn(uint64)void
+	callsub arc59_optRouterIn
 	int 1
 	return
 
-// optRouterIn(asa: AssetID): void
+// arc59_optRouterIn(asa: AssetID): void
 //
 // Opt the ARC59 router into the ASA. This is required before this app can be used to send the ASA to anyone.
 //
 // @param asa The ASA to opt into
-optRouterIn:
+arc59_optRouterIn:
 	proto 1 0
 
 	// contracts/arc59.algo.ts:26
@@ -154,8 +154,8 @@ getOrCreateVault:
 	frame_bury 0
 	retsub
 
-// getAssetSendInfo(address,uint64)(uint64,uint64)
-*abi_route_getAssetSendInfo:
+// arc59_getAssetSendInfo(address,uint64)(uint64,uint64)
+*abi_route_arc59_getAssetSendInfo:
 	// The ABI return prefix
 	byte 0x151f7c75
 
@@ -171,21 +171,21 @@ getOrCreateVault:
 	==
 	assert
 
-	// execute getAssetSendInfo(address,uint64)(uint64,uint64)
-	callsub getAssetSendInfo
+	// execute arc59_getAssetSendInfo(address,uint64)(uint64,uint64)
+	callsub arc59_getAssetSendInfo
 	concat
 	log
 	int 1
 	return
 
-// getAssetSendInfo(receiver: Address, asset: AssetID): { itxns: uint64; mbr: uint64 }
+// arc59_getAssetSendInfo(receiver: Address, asset: AssetID): { itxns: uint64; mbr: uint64 }
 //
 //
 // @param receiver The address to send the asset to
 // @param asset The asset to send
 //
 // @returns The number of itxns sent and the MBR required to send the asset to the receiver
-getAssetSendInfo:
+arc59_getAssetSendInfo:
 	proto 2 1
 
 	// Push empty bytes after the frame pointer to reserve space for local variables
@@ -377,8 +377,8 @@ getAssetSendInfo:
 	popn 3
 	retsub
 
-// sendAsset(axfer,address)address
-*abi_route_sendAsset:
+// arc59_sendAsset(axfer,address)address
+*abi_route_arc59_sendAsset:
 	// The ABI return prefix
 	byte 0x151f7c75
 
@@ -400,14 +400,14 @@ getAssetSendInfo:
 	==
 	assert
 
-	// execute sendAsset(axfer,address)address
-	callsub sendAsset
+	// execute arc59_sendAsset(axfer,address)address
+	callsub arc59_sendAsset
 	concat
 	log
 	int 1
 	return
 
-// sendAsset(axfer: AssetTransferTxn, receiver: Address): Address
+// arc59_sendAsset(axfer: AssetTransferTxn, receiver: Address): Address
 //
 // Send an asset to the receiver
 //
@@ -415,7 +415,7 @@ getAssetSendInfo:
 // @param axfer The asset transfer to this app
 //
 // @returns The address that the asset was sent to (either the receiver or their vault)
-sendAsset:
+arc59_sendAsset:
 	proto 2 1
 
 	// Push empty bytes after the frame pointer to reserve space for local variables
@@ -660,23 +660,23 @@ sendAsset:
 	popn 2
 	retsub
 
-// claim(uint64)void
-*abi_route_claim:
+// arc59_claim(uint64)void
+*abi_route_arc59_claim:
 	// asa: uint64
 	txna ApplicationArgs 1
 	btoi
 
-	// execute claim(uint64)void
-	callsub claim
+	// execute arc59_claim(uint64)void
+	callsub arc59_claim
 	int 1
 	return
 
-// claim(asa: AssetID): void
+// arc59_claim(asa: AssetID): void
 //
 // Claim an ASA from the vault
 //
 // @param asa The ASA to claim
-claim:
+arc59_claim:
 	proto 1 0
 
 	// Push empty bytes after the frame pointer to reserve space for local variables
@@ -781,8 +781,8 @@ claim:
 	itxn_submit
 	retsub
 
-// burn(uint64,uint64)void
-*abi_route_burn:
+// arc59_burn(uint64,uint64)void
+*abi_route_arc59_burn:
 	// arc54App: uint64
 	txna ApplicationArgs 2
 	btoi
@@ -791,18 +791,18 @@ claim:
 	txna ApplicationArgs 1
 	btoi
 
-	// execute burn(uint64,uint64)void
-	callsub burn
+	// execute arc59_burn(uint64,uint64)void
+	callsub arc59_burn
 	int 1
 	return
 
-// burn(asa: AssetID, arc54App: AppID): void
+// arc59_burn(asa: AssetID, arc54App: AppID): void
 //
 // Burn the ASA from the vault with ARC54
 //
 // @param asa The ASA to burn
 // @param arc54App The ARC54 app to burn the ASA to
-burn:
+arc59_burn:
 	proto 2 0
 
 	// Push empty bytes after the frame pointer to reserve space for local variables
@@ -1000,11 +1000,11 @@ burn:
 	err
 
 *call_NoOp:
-	method "optRouterIn(uint64)void"
-	method "getAssetSendInfo(address,uint64)(uint64,uint64)"
-	method "sendAsset(axfer,address)address"
-	method "claim(uint64)void"
-	method "burn(uint64,uint64)void"
+	method "arc59_optRouterIn(uint64)void"
+	method "arc59_getAssetSendInfo(address,uint64)(uint64,uint64)"
+	method "arc59_sendAsset(axfer,address)address"
+	method "arc59_claim(uint64)void"
+	method "arc59_burn(uint64,uint64)void"
 	txna ApplicationArgs 0
-	match *abi_route_optRouterIn *abi_route_getAssetSendInfo *abi_route_sendAsset *abi_route_claim *abi_route_burn
+	match *abi_route_arc59_optRouterIn *abi_route_arc59_getAssetSendInfo *abi_route_arc59_sendAsset *abi_route_arc59_claim *abi_route_arc59_burn
 	err
