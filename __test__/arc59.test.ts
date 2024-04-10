@@ -24,12 +24,14 @@ async function sendAsset(
 
   const composer = appClient.compose();
 
+  const suggestedParams = await algod.getTransactionParams().do();
+
   if (mbr) {
     const mbrPayment = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
       from: sender,
       to: arc59RouterAddress,
       amount: mbr,
-      suggestedParams: await algod.getTransactionParams().do(),
+      suggestedParams,
     });
 
     composer.addTransaction({ transaction: mbrPayment, signer });
@@ -40,8 +42,23 @@ async function sendAsset(
     to: arc59RouterAddress,
     assetIndex: assetId,
     amount: 1,
-    suggestedParams: await algod.getTransactionParams().do(),
+    suggestedParams,
   });
+
+  // If the router is not opted in, call arc59OptRouterIn to do so
+  try {
+    // accountAssetInformation throws an error if the account is not opted in
+    await algod.accountAssetInformation(arc59RouterAddress, assetId).do();
+  } catch (e) {
+    const fundRouterTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+      from: sender,
+      to: arc59RouterAddress,
+      amount: 200_000,
+      suggestedParams: { ...suggestedParams, fee: 2_000, flatFee: true },
+    });
+    composer.addTransaction({ transaction: fundRouterTxn, signer });
+    composer.arc59OptRouterIn({ asa: assetId });
+  }
 
   await composer
     .arc59SendAsset({ axfer, receiver }, { sendParams: { fee: algokit.microAlgos(1000 + 1000 * Number(itxns)) } })
@@ -50,7 +67,8 @@ async function sendAsset(
 
 describe('Arc59', () => {
   let appClient: Arc59Client;
-  let assetId: number;
+  let assetOne: number;
+  let assetTwo: number;
   let alice: algosdk.Account;
   let bob: algosdk.Account;
 
@@ -69,21 +87,32 @@ describe('Arc59', () => {
       algod
     );
 
-    const assetCreate = algosdk.makeAssetCreateTxnWithSuggestedParamsFromObject({
+    const assetOneCreate = algosdk.makeAssetCreateTxnWithSuggestedParamsFromObject({
       from: testAccount.addr,
+      unitName: 'one',
       total: 100,
       decimals: 0,
       defaultFrozen: false,
       suggestedParams: await algod.getTransactionParams().do(),
     });
-
     const atc = new algosdk.AtomicTransactionComposer();
+    atc.addTransaction({ txn: assetOneCreate, signer: algosdk.makeBasicAccountTransactionSigner(testAccount) });
+    const oneResult = await algokit.sendAtomicTransactionComposer({ atc }, algod);
+    assetOne = Number(oneResult.confirmations![0].assetIndex);
 
-    atc.addTransaction({ txn: assetCreate, signer: algosdk.makeBasicAccountTransactionSigner(testAccount) });
+    const assetTwoCreate = algosdk.makeAssetCreateTxnWithSuggestedParamsFromObject({
+      from: testAccount.addr,
+      unitName: 'two',
+      total: 100,
+      decimals: 0,
+      defaultFrozen: false,
+      suggestedParams: await algod.getTransactionParams().do(),
+    });
+    const atcTwo = new algosdk.AtomicTransactionComposer();
+    atcTwo.addTransaction({ txn: assetTwoCreate, signer: algosdk.makeBasicAccountTransactionSigner(testAccount) });
+    const twoResult = await algokit.sendAtomicTransactionComposer({ atc: atcTwo }, algod);
+    assetTwo = Number(twoResult.confirmations![0].assetIndex);
 
-    const result = await algokit.sendAtomicTransactionComposer({ atc }, algod);
-
-    assetId = Number(result.confirmations![0].assetIndex);
     await appClient.create.createApplication({});
 
     await appClient.appClient.fundAppAccount({ amount: algokit.microAlgos(200_000) });
@@ -92,11 +121,11 @@ describe('Arc59', () => {
   });
 
   test('routerOptIn', async () => {
-    await appClient.arc59OptRouterIn({ asa: assetId }, { sendParams: { fee: algokit.microAlgos(2_000) } });
+    await appClient.arc59OptRouterIn({ asa: assetOne }, { sendParams: { fee: algokit.microAlgos(2_000) } });
   });
 
   test('Brand new account getAssetSendInfo', async () => {
-    const res = await appClient.arc59GetAssetSendInfo({ asset: assetId, receiver: algosdk.generateAccount().addr });
+    const res = await appClient.arc59GetAssetSendInfo({ asset: assetOne, receiver: algosdk.generateAccount().addr });
 
     const itxns = res.return![0];
     const mbr = res.return![1];
@@ -109,13 +138,18 @@ describe('Arc59', () => {
     const { algod } = fixture.context;
     bob = algosdk.generateAccount();
 
-    await sendAsset(appClient, assetId, alice.addr, alice, bob.addr, algod);
+    await sendAsset(appClient, assetOne, alice.addr, alice, bob.addr, algod);
   });
 
-  test('Existing vault sendAsset', async () => {
+  test('Existing vault sendAsset (existing asset)', async () => {
     const { algod } = fixture.context;
 
-    console.debug('BOB', bob.addr);
-    await sendAsset(appClient, assetId, alice.addr, alice, bob.addr, algod);
+    await sendAsset(appClient, assetOne, alice.addr, alice, bob.addr, algod);
+  });
+
+  test('Existing vault sendAsset (new asset)', async () => {
+    const { algod } = fixture.context;
+
+    await sendAsset(appClient, assetTwo, alice.addr, alice, bob.addr, algod);
   });
 });
