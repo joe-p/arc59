@@ -135,8 +135,8 @@ describe('Arc59', () => {
   });
 
   test('Brand new account sendAsset', async () => {
-    const { algod } = fixture.context;
-    bob = algosdk.generateAccount();
+    const { algod, testAccount } = fixture.context;
+    bob = testAccount;
 
     await sendAsset(appClient, assetOne, alice.addr, alice, bob.addr, algod);
   });
@@ -151,5 +151,16 @@ describe('Arc59', () => {
     const { algod } = fixture.context;
 
     await sendAsset(appClient, assetTwo, alice.addr, alice, bob.addr, algod);
+  });
+
+  test('claim', async () => {
+    const { algod } = fixture.context;
+
+    await algokit.assetOptIn({ assetId: assetOne, account: bob }, algod);
+    await appClient.arc59Claim({ asa: assetOne }, { sender: bob, sendParams: { fee: algokit.algos(0.003) } });
+
+    const bobAssetInfo = await algod.accountAssetInformation(bob.addr, assetOne).do();
+
+    expect(bobAssetInfo['asset-holding'].amount).toBe(2);
   });
 });
