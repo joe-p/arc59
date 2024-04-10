@@ -16,7 +16,7 @@ int 6
 *
 txn OnCompletion
 +
-switch *call_NoOp *NOT_IMPLEMENTED *NOT_IMPLEMENTED *NOT_IMPLEMENTED *NOT_IMPLEMENTED *NOT_IMPLEMENTED *create_NoOp *NOT_IMPLEMENTED *NOT_IMPLEMENTED *NOT_IMPLEMENTED *NOT_IMPLEMENTED *NOT_IMPLEMENTED
+switch *call_NoOp *NOT_IMPLEMENTED *NOT_IMPLEMENTED *NOT_IMPLEMENTED *call_UpdateApplication *NOT_IMPLEMENTED *create_NoOp *NOT_IMPLEMENTED *NOT_IMPLEMENTED *NOT_IMPLEMENTED *NOT_IMPLEMENTED *NOT_IMPLEMENTED
 
 *NOT_IMPLEMENTED:
 	err
@@ -989,6 +989,27 @@ arc59_burn:
 	itxn_submit
 	retsub
 
+// updateApplication()void
+*abi_route_updateApplication:
+	// execute updateApplication()void
+	callsub updateApplication
+	int 1
+	return
+
+// updateApplication(): void
+updateApplication:
+	proto 0 0
+
+	// contracts/mutable_arc59.algo.ts:5
+	// assert(this.txn.sender === this.app.creator)
+	txn Sender
+	txna Applications 0
+	app_params_get AppCreator
+	pop
+	==
+	assert
+	retsub
+
 *abi_route_createApplication:
 	int 1
 	return
@@ -1007,4 +1028,10 @@ arc59_burn:
 	method "arc59_burn(uint64,uint64)void"
 	txna ApplicationArgs 0
 	match *abi_route_arc59_optRouterIn *abi_route_arc59_getAssetSendInfo *abi_route_arc59_sendAsset *abi_route_arc59_claim *abi_route_arc59_burn
+	err
+
+*call_UpdateApplication:
+	method "updateApplication()void"
+	txna ApplicationArgs 0
+	match *abi_route_updateApplication
 	err
