@@ -52,6 +52,7 @@ describe('Arc59', () => {
   let appClient: Arc59Client;
   let assetId: number;
   let alice: algosdk.Account;
+  let bob: algosdk.Account;
 
   beforeEach(fixture.beforeEach);
 
@@ -106,8 +107,15 @@ describe('Arc59', () => {
 
   test('Brand new account sendAsset', async () => {
     const { algod } = fixture.context;
-    const bob = algosdk.generateAccount();
+    bob = algosdk.generateAccount();
 
+    await sendAsset(appClient, assetId, alice.addr, alice, bob.addr, algod);
+  });
+
+  test('Existing vault sendAsset', async () => {
+    const { algod } = fixture.context;
+
+    console.debug('BOB', bob.addr);
     await sendAsset(appClient, assetId, alice.addr, alice, bob.addr, algod);
   });
 });
