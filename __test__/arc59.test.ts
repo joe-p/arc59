@@ -141,13 +141,13 @@ describe('Arc59', () => {
     await sendAsset(appClient, assetOne, alice.addr, alice, bob.addr, algod);
   });
 
-  test('Existing vault sendAsset (existing asset)', async () => {
+  test('Existing inbox sendAsset (existing asset)', async () => {
     const { algod } = fixture.context;
 
     await sendAsset(appClient, assetOne, alice.addr, alice, bob.addr, algod);
   });
 
-  test('Existing vault sendAsset (new asset)', async () => {
+  test('Existing inbox sendAsset (new asset)', async () => {
     const { algod } = fixture.context;
 
     await sendAsset(appClient, assetTwo, alice.addr, alice, bob.addr, algod);

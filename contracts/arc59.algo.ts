@@ -15,7 +15,7 @@ class ControlledAddress extends Contract {
 }
 
 export class ARC59 extends Contract {
-  vaults = BoxMap<Address, Address>();
+  inboxes = BoxMap<Address, Address>();
 
   /**
    * Opt the ARC59 router into the ASA. This is required before this app can be used to send the ASA to anyone.
@@ -31,20 +31,20 @@ export class ARC59 extends Contract {
   }
 
   /**
-   * Gets an existing or create a vault for the given address
+   * Gets an existing or create a inbox for the given address
    */
-  private getOrCreateVault(addr: Address): Address {
-    if (this.vaults(addr).exists) return this.vaults(addr).value;
+  private getOrCreateInbox(addr: Address): Address {
+    if (this.inboxes(addr).exists) return this.inboxes(addr).value;
 
-    const vault = sendMethodCall<typeof ControlledAddress.prototype.new>({
+    const inbox = sendMethodCall<typeof ControlledAddress.prototype.new>({
       onCompletion: OnCompletion.DeleteApplication,
       approvalProgram: ControlledAddress.approvalProgram(),
       clearStateProgram: ControlledAddress.clearProgram(),
     });
 
-    this.vaults(addr).value = vault;
+    this.inboxes(addr).value = inbox;
 
-    return vault;
+    return inbox;
   }
 
   /**
@@ -59,31 +59,31 @@ export class ARC59 extends Contract {
 
     if (receiver.isOptedInToAsset(asset)) return info;
 
-    if (!this.vaults(receiver).exists) {
-      // Two itxns to create vault (create + rekey)
+    if (!this.inboxes(receiver).exists) {
+      // Two itxns to create inbox (create + rekey)
       // One itxns to send MBR
       // One itxn to opt in
       info.itxns += 4;
 
-      // Calculate the MBR for the vault box
+      // Calculate the MBR for the inbox box
       const preMBR = globals.currentApplicationAddress.minBalance;
-      this.vaults(receiver).value = globals.zeroAddress;
+      this.inboxes(receiver).value = globals.zeroAddress;
       const boxMbrDelta = globals.currentApplicationAddress.minBalance - preMBR;
-      this.vaults(receiver).delete();
+      this.inboxes(receiver).delete();
 
-      // MBR = MBR for the box + min balance for the vault + ASA MBR
+      // MBR = MBR for the box + min balance for the inbox + ASA MBR
       info.mbr = boxMbrDelta + globals.minBalance + globals.assetOptInMinBalance;
 
       return info;
     }
 
-    const vault = this.vaults(receiver).value;
+    const inbox = this.inboxes(receiver).value;
 
-    if (!vault.isOptedInToAsset(asset)) {
+    if (!inbox.isOptedInToAsset(asset)) {
       // One itxn to opt in
       info.itxns += 1;
 
-      if (!(vault.balance >= vault.minBalance + globals.assetOptInMinBalance)) {
+      if (!(inbox.balance >= inbox.minBalance + globals.assetOptInMinBalance)) {
         // One itxn to send MBR
         info.itxns += 1;
 
@@ -101,7 +101,7 @@ export class ARC59 extends Contract {
    * @param receiver The address to send the asset to
    * @param axfer The asset transfer to this app
    *
-   * @returns The address that the asset was sent to (either the receiver or their vault)
+   * @returns The address that the asset was sent to (either the receiver or their inbox)
    */
   arc59_sendAsset(axfer: AssetTransferTxn, receiver: Address): Address {
     verifyAssetTransferTxn(axfer, {
@@ -119,73 +119,73 @@ export class ARC59 extends Contract {
       return receiver;
     }
 
-    const vaultExisted = this.vaults(receiver).exists;
-    const vault = this.getOrCreateVault(receiver);
+    const inboxExisted = this.inboxes(receiver).exists;
+    const inbox = this.getOrCreateInbox(receiver);
 
-    if (!vault.isOptedInToAsset(axfer.xferAsset)) {
-      let vaultMbrDelta = globals.assetOptInMinBalance;
-      if (!vaultExisted) vaultMbrDelta += globals.minBalance;
+    if (!inbox.isOptedInToAsset(axfer.xferAsset)) {
+      let inboxMbrDelta = globals.assetOptInMinBalance;
+      if (!inboxExisted) inboxMbrDelta += globals.minBalance;
 
-      // Ensure the vault has enough balance to opt in
-      if (vault.balance < vault.minBalance + vaultMbrDelta) {
+      // Ensure the inbox has enough balance to opt in
+      if (inbox.balance < inbox.minBalance + inboxMbrDelta) {
         sendPayment({
-          receiver: vault,
-          amount: vaultMbrDelta,
+          receiver: inbox,
+          amount: inboxMbrDelta,
         });
       }
 
-      // Opt the vault in
+      // Opt the inbox in
       sendAssetTransfer({
-        sender: vault,
-        assetReceiver: vault,
+        sender: inbox,
+        assetReceiver: inbox,
         assetAmount: 0,
         xferAsset: axfer.xferAsset,
       });
     }
 
-    // Transfer the asset to the vault
+    // Transfer the asset to the inbox
     sendAssetTransfer({
-      assetReceiver: vault,
+      assetReceiver: inbox,
       assetAmount: axfer.assetAmount,
       xferAsset: axfer.xferAsset,
     });
 
-    return vault;
+    return inbox;
   }
 
   /**
-   * Claim an ASA from the vault
+   * Claim an ASA from the inbox
    *
    * @param asa The ASA to claim
    */
   arc59_claim(asa: AssetID): void {
-    const vault = this.vaults(this.txn.sender).value;
+    const inbox = this.inboxes(this.txn.sender).value;
 
-    const preMBR = vault.minBalance;
+    const preMBR = inbox.minBalance;
 
     sendAssetTransfer({
-      sender: vault,
+      sender: inbox,
       assetReceiver: this.txn.sender,
-      assetAmount: vault.assetBalance(asa),
+      assetAmount: inbox.assetBalance(asa),
       xferAsset: asa,
       assetCloseTo: this.txn.sender,
     });
 
     sendPayment({
-      sender: vault,
+      sender: inbox,
       receiver: this.txn.sender,
-      amount: preMBR - vault.minBalance,
+      amount: preMBR - inbox.minBalance,
     });
   }
 
   /**
-   * Burn the ASA from the vault with ARC54
+   * Burn the ASA from the inbox with ARC54
    *
    * @param asa The ASA to burn
    * @param arc54App The ARC54 app to burn the ASA to
    */
   arc59_burn(asa: AssetID, arc54App: AppID) {
-    const vault = this.vaults(this.txn.sender).value;
+    const inbox = this.inboxes(this.txn.sender).value;
 
     // opt the arc54 app into the ASA if not already opted in
     if (!arc54App.address.isOptedInToAsset(asa)) {
@@ -195,27 +195,27 @@ export class ARC59 extends Contract {
       });
 
       sendMethodCall<[AssetReference], void>({
-        sender: vault,
+        sender: inbox,
         name: 'arc54_optIntoASA',
         methodArgs: [asa],
         applicationID: arc54App,
       });
     }
 
-    const preMBR = vault.minBalance;
+    const preMBR = inbox.minBalance;
 
     sendAssetTransfer({
-      sender: vault,
+      sender: inbox,
       assetReceiver: arc54App.address,
-      assetAmount: vault.assetBalance(asa),
+      assetAmount: inbox.assetBalance(asa),
       xferAsset: asa,
       assetCloseTo: arc54App.address,
     });
 
     sendPayment({
-      sender: vault,
+      sender: inbox,
       receiver: this.txn.sender,
-      amount: preMBR - vault.minBalance,
+      amount: preMBR - inbox.minBalance,
     });
   }
 }

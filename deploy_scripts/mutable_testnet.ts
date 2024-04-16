@@ -62,7 +62,7 @@ async function deploy() {
 
   console.debug(`Opted router in to asset ${assetId}`);
 
-  // Send asset to a new account's vault
+  // Send asset to a new account's inbox
   const receiver = algosdk.generateAccount().addr;
   const arc59RouterAddress = (await appClient.appClient.getAppReference()).appAddress;
 
@@ -96,7 +96,7 @@ async function deploy() {
     .arc59SendAsset({ axfer, receiver }, { sendParams: { fee: algokit.microAlgos(1000 + 1000 * Number(itxns)) } })
     .execute();
 
-  console.debug(`Sent asset ${assetId} to ${receiver}'s vault (${result.returns[0]})`);
+  console.debug(`Sent asset ${assetId} to ${receiver}'s inbox (${result.returns[0]})`);
 }
 
 deploy();

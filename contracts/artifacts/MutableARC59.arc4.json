@@ -52,12 +52,12 @@
       ],
       "returns": {
         "type": "address",
-        "desc": "The address that the asset was sent to (either the receiver or their vault)"
+        "desc": "The address that the asset was sent to (either the receiver or their inbox)"
       }
     },
     {
       "name": "arc59_claim",
-      "desc": "Claim an ASA from the vault",
+      "desc": "Claim an ASA from the inbox",
       "args": [
         {
           "name": "asa",
@@ -71,7 +71,7 @@
     },
     {
       "name": "arc59_burn",
-      "desc": "Burn the ASA from the vault with ARC54",
+      "desc": "Burn the ASA from the inbox with ARC54",
       "args": [
         {
           "name": "asa",
