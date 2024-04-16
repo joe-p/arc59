@@ -29,9 +29,14 @@ import type { ABIResult, TransactionWithSigner } from 'algosdk'
 import { Algodv2, OnApplicationComplete, Transaction, AtomicTransactionComposer, modelsv2 } from 'algosdk'
 export const APP_SPEC: AppSpec = {
   "hints": {
-    "new()address": {
+    "arc54_optIntoASA(asset)void": {
       "call_config": {
-        "delete_application": "CREATE"
+        "no_op": "CALL"
+      }
+    },
+    "createApplication()void": {
+      "call_config": {
+        "no_op": "CREATE"
       }
     }
   },
@@ -63,18 +68,30 @@ export const APP_SPEC: AppSpec = {
     }
   },
   "source": {
-    "approval": "I3ByYWdtYSB2ZXJzaW9uIDEwCgovLyBUaGlzIFRFQUwgd2FzIGdlbmVyYXRlZCBieSBURUFMU2NyaXB0IHYwLjkwLjMKLy8gaHR0cHM6Ly9naXRodWIuY29tL2FsZ29yYW5kZm91bmRhdGlvbi9URUFMU2NyaXB0CgovLyBUaGlzIGNvbnRyYWN0IGlzIGNvbXBsaWFudCB3aXRoIGFuZC9vciBpbXBsZW1lbnRzIHRoZSBmb2xsb3dpbmcgQVJDczogWyBBUkM0IF0KCi8vIFRoZSBmb2xsb3dpbmcgdGVuIGxpbmVzIG9mIFRFQUwgaGFuZGxlIGluaXRpYWwgcHJvZ3JhbSBmbG93Ci8vIFRoaXMgcGF0dGVybiBpcyB1c2VkIHRvIG1ha2UgaXQgZWFzeSBmb3IgYW55b25lIHRvIHBhcnNlIHRoZSBzdGFydCBvZiB0aGUgcHJvZ3JhbSBhbmQgZGV0ZXJtaW5lIGlmIGEgc3BlY2lmaWMgYWN0aW9uIGlzIGFsbG93ZWQKLy8gSGVyZSwgYWN0aW9uIHJlZmVycyB0byB0aGUgT25Db21wbGV0ZSBpbiBjb21iaW5hdGlvbiB3aXRoIHdoZXRoZXIgdGhlIGFwcCBpcyBiZWluZyBjcmVhdGVkIG9yIGNhbGxlZAovLyBFdmVyeSBwb3NzaWJsZSBhY3Rpb24gZm9yIHRoaXMgY29udHJhY3QgaXMgcmVwcmVzZW50ZWQgaW4gdGhlIHN3aXRjaCBzdGF0ZW1lbnQKLy8gSWYgdGhlIGFjdGlvbiBpcyBub3QgaW1wbGVtZW50ZWQgaW4gdGhlIGNvbnRyYWN0LCBpdHMgcmVzcGVjdGl2ZSBicmFuY2ggd2lsbCBiZSAiKk5PVF9JTVBMRU1FTlRFRCIgd2hpY2gganVzdCBjb250YWlucyAiZXJyIgp0eG4gQXBwbGljYXRpb25JRAohCmludCA2CioKdHhuIE9uQ29tcGxldGlvbgorCnN3aXRjaCAqTk9UX0lNUExFTUVOVEVEICpOT1RfSU1QTEVNRU5URUQgKk5PVF9JTVBMRU1FTlRFRCAqTk9UX0lNUExFTUVOVEVEICpOT1RfSU1QTEVNRU5URUQgKk5PVF9JTVBMRU1FTlRFRCAqTk9UX0lNUExFTUVOVEVEICpOT1RfSU1QTEVNRU5URUQgKk5PVF9JTVBMRU1FTlRFRCAqTk9UX0lNUExFTUVOVEVEICpOT1RfSU1QTEVNRU5URUQgKmNyZWF0ZV9EZWxldGVBcHBsaWNhdGlvbgoKKk5PVF9JTVBMRU1FTlRFRDoKCWVycgoKLy8gbmV3KClhZGRyZXNzCiphYmlfcm91dGVfbmV3OgoJLy8gVGhlIEFCSSByZXR1cm4gcHJlZml4CglieXRlIDB4MTUxZjdjNzUKCgkvLyBleGVjdXRlIG5ldygpYWRkcmVzcwoJY2FsbHN1YiBuZXcKCWNvbmNhdAoJbG9nCglpbnQgMQoJcmV0dXJuCgovLyBuZXcoKTogQWRkcmVzcwpuZXc6Cglwcm90byAwIDEKCgkvLyBjb250cmFjdHMvYXJjNTkuYWxnby50czoxMAoJLy8gc2VuZFBheW1lbnQoewoJLy8gICAgICAgcmVrZXlUbzogdGhpcy50eG4uc2VuZGVyLAoJLy8gICAgIH0pCglpdHhuX2JlZ2luCglpbnQgcGF5CglpdHhuX2ZpZWxkIFR5cGVFbnVtCgoJLy8gY29udHJhY3RzL2FyYzU5LmFsZ28udHM6MTEKCS8vIHJla2V5VG86IHRoaXMudHhuLnNlbmRlcgoJdHhuIFNlbmRlcgoJaXR4bl9maWVsZCBSZWtleVRvCgoJLy8gRmVlIGZpZWxkIG5vdCBzZXQsIGRlZmF1bHRpbmcgdG8gMAoJaW50IDAKCWl0eG5fZmllbGQgRmVlCgoJLy8gU3VibWl0IGlubmVyIHRyYW5zYWN0aW9uCglpdHhuX3N1Ym1pdAoKCS8vIGNvbnRyYWN0cy9hcmM1OS5hbGdvLnRzOjE0CgkvLyByZXR1cm4gdGhpcy5hcHAuYWRkcmVzczsKCWdsb2JhbCBDdXJyZW50QXBwbGljYXRpb25BZGRyZXNzCglyZXRzdWIKCipjcmVhdGVfRGVsZXRlQXBwbGljYXRpb246CgltZXRob2QgIm5ldygpYWRkcmVzcyIKCXR4bmEgQXBwbGljYXRpb25BcmdzIDAKCW1hdGNoICphYmlfcm91dGVfbmV3CgllcnI=",
+    "approval": "I3ByYWdtYSB2ZXJzaW9uIDEwCgovLyBUaGlzIFRFQUwgd2FzIGdlbmVyYXRlZCBieSBURUFMU2NyaXB0IHYwLjkwLjMKLy8gaHR0cHM6Ly9naXRodWIuY29tL2FsZ29yYW5kZm91bmRhdGlvbi9URUFMU2NyaXB0CgovLyBUaGlzIGNvbnRyYWN0IGlzIGNvbXBsaWFudCB3aXRoIGFuZC9vciBpbXBsZW1lbnRzIHRoZSBmb2xsb3dpbmcgQVJDczogWyBBUkM0IF0KCi8vIFRoZSBmb2xsb3dpbmcgdGVuIGxpbmVzIG9mIFRFQUwgaGFuZGxlIGluaXRpYWwgcHJvZ3JhbSBmbG93Ci8vIFRoaXMgcGF0dGVybiBpcyB1c2VkIHRvIG1ha2UgaXQgZWFzeSBmb3IgYW55b25lIHRvIHBhcnNlIHRoZSBzdGFydCBvZiB0aGUgcHJvZ3JhbSBhbmQgZGV0ZXJtaW5lIGlmIGEgc3BlY2lmaWMgYWN0aW9uIGlzIGFsbG93ZWQKLy8gSGVyZSwgYWN0aW9uIHJlZmVycyB0byB0aGUgT25Db21wbGV0ZSBpbiBjb21iaW5hdGlvbiB3aXRoIHdoZXRoZXIgdGhlIGFwcCBpcyBiZWluZyBjcmVhdGVkIG9yIGNhbGxlZAovLyBFdmVyeSBwb3NzaWJsZSBhY3Rpb24gZm9yIHRoaXMgY29udHJhY3QgaXMgcmVwcmVzZW50ZWQgaW4gdGhlIHN3aXRjaCBzdGF0ZW1lbnQKLy8gSWYgdGhlIGFjdGlvbiBpcyBub3QgaW1wbGVtZW50ZWQgaW4gdGhlIGNvbnRyYWN0LCBpdHMgcmVzcGVjdGl2ZSBicmFuY2ggd2lsbCBiZSAiKk5PVF9JTVBMRU1FTlRFRCIgd2hpY2gganVzdCBjb250YWlucyAiZXJyIgp0eG4gQXBwbGljYXRpb25JRAohCmludCA2CioKdHhuIE9uQ29tcGxldGlvbgorCnN3aXRjaCAqY2FsbF9Ob09wICpOT1RfSU1QTEVNRU5URUQgKk5PVF9JTVBMRU1FTlRFRCAqTk9UX0lNUExFTUVOVEVEICpOT1RfSU1QTEVNRU5URUQgKk5PVF9JTVBMRU1FTlRFRCAqY3JlYXRlX05vT3AgKk5PVF9JTVBMRU1FTlRFRCAqTk9UX0lNUExFTUVOVEVEICpOT1RfSU1QTEVNRU5URUQgKk5PVF9JTVBMRU1FTlRFRCAqTk9UX0lNUExFTUVOVEVECgoqTk9UX0lNUExFTUVOVEVEOgoJZXJyCgovLyBhcmM1NF9vcHRJbnRvQVNBKGFzc2V0KXZvaWQKKmFiaV9yb3V0ZV9hcmM1NF9vcHRJbnRvQVNBOgoJLy8gYXNhOiBhc3NldAoJdHhuYSBBcHBsaWNhdGlvbkFyZ3MgMQoJYnRvaQoJdHhuYXMgQXNzZXRzCgoJLy8gZXhlY3V0ZSBhcmM1NF9vcHRJbnRvQVNBKGFzc2V0KXZvaWQKCWNhbGxzdWIgYXJjNTRfb3B0SW50b0FTQQoJaW50IDEKCXJldHVybgoKLy8gYXJjNTRfb3B0SW50b0FTQShhc2E6IEFzc2V0UmVmZXJlbmNlKTogdm9pZAphcmM1NF9vcHRJbnRvQVNBOgoJcHJvdG8gMSAwCgoJLy8gY29udHJhY3RzL2FyYzU0LmFsZ28udHM6MTEKCS8vIHNlbmRBc3NldFRyYW5zZmVyKHsKCS8vICAgICAgIGFzc2V0UmVjZWl2ZXI6IGdsb2JhbHMuY3VycmVudEFwcGxpY2F0aW9uQWRkcmVzcywKCS8vICAgICAgIHhmZXJBc3NldDogYXNhLAoJLy8gICAgICAgYXNzZXRBbW91bnQ6IDAsCgkvLyAgICAgICBmZWU6IDAsCgkvLyAgICAgfSkKCWl0eG5fYmVnaW4KCWludCBheGZlcgoJaXR4bl9maWVsZCBUeXBlRW51bQoKCS8vIGNvbnRyYWN0cy9hcmM1NC5hbGdvLnRzOjEyCgkvLyBhc3NldFJlY2VpdmVyOiBnbG9iYWxzLmN1cnJlbnRBcHBsaWNhdGlvbkFkZHJlc3MKCWdsb2JhbCBDdXJyZW50QXBwbGljYXRpb25BZGRyZXNzCglpdHhuX2ZpZWxkIEFzc2V0UmVjZWl2ZXIKCgkvLyBjb250cmFjdHMvYXJjNTQuYWxnby50czoxMwoJLy8geGZlckFzc2V0OiBhc2EKCWZyYW1lX2RpZyAtMSAvLyBhc2E6IEFzc2V0UmVmZXJlbmNlCglpdHhuX2ZpZWxkIFhmZXJBc3NldAoKCS8vIGNvbnRyYWN0cy9hcmM1NC5hbGdvLnRzOjE0CgkvLyBhc3NldEFtb3VudDogMAoJaW50IDAKCWl0eG5fZmllbGQgQXNzZXRBbW91bnQKCgkvLyBjb250cmFjdHMvYXJjNTQuYWxnby50czoxNQoJLy8gZmVlOiAwCglpbnQgMAoJaXR4bl9maWVsZCBGZWUKCgkvLyBTdWJtaXQgaW5uZXIgdHJhbnNhY3Rpb24KCWl0eG5fc3VibWl0CglyZXRzdWIKCiphYmlfcm91dGVfY3JlYXRlQXBwbGljYXRpb246CglpbnQgMQoJcmV0dXJuCgoqY3JlYXRlX05vT3A6CgltZXRob2QgImNyZWF0ZUFwcGxpY2F0aW9uKCl2b2lkIgoJdHhuYSBBcHBsaWNhdGlvbkFyZ3MgMAoJbWF0Y2ggKmFiaV9yb3V0ZV9jcmVhdGVBcHBsaWNhdGlvbgoJZXJyCgoqY2FsbF9Ob09wOgoJbWV0aG9kICJhcmM1NF9vcHRJbnRvQVNBKGFzc2V0KXZvaWQiCgl0eG5hIEFwcGxpY2F0aW9uQXJncyAwCgltYXRjaCAqYWJpX3JvdXRlX2FyYzU0X29wdEludG9BU0EKCWVycg==",
     "clear": "I3ByYWdtYSB2ZXJzaW9uIDEw"
   },
   "contract": {
-    "name": "ControlledAddress",
+    "name": "ARC54",
     "desc": "",
     "methods": [
       {
-        "name": "new",
+        "name": "arc54_optIntoASA",
+        "args": [
+          {
+            "name": "asa",
+            "type": "asset"
+          }
+        ],
+        "returns": {
+          "type": "void"
+        }
+      },
+      {
+        "name": "createApplication",
         "args": [],
         "returns": {
-          "type": "address"
+          "type": "void"
         }
       }
     ]
@@ -137,28 +154,35 @@ export type AppClientComposeCallCoreParams = Omit<AppClientCallCoreParams, 'send
 export type AppClientComposeExecuteParams = Pick<SendTransactionParams, 'skipWaiting' | 'maxRoundsToWaitForConfirmation' | 'populateAppCallResources' | 'suppressLog'>
 
 /**
- * Defines the types of available calls and state of the ControlledAddress smart contract.
+ * Defines the types of available calls and state of the Arc54 smart contract.
  */
-export type ControlledAddress = {
+export type Arc54 = {
   /**
    * Maps method signatures / names to their argument and return types.
    */
   methods:
-    & Record<'new()address' | 'new', {
+    & Record<'arc54_optIntoASA(asset)void' | 'arc54_optIntoASA', {
+      argsObj: {
+        asa: number | bigint
+      }
+      argsTuple: [asa: number | bigint]
+      returns: void
+    }>
+    & Record<'createApplication()void' | 'createApplication', {
       argsObj: {
       }
       argsTuple: []
-      returns: string
+      returns: void
     }>
 }
 /**
  * Defines the possible abi call signatures
  */
-export type ControlledAddressSig = keyof ControlledAddress['methods']
+export type Arc54Sig = keyof Arc54['methods']
 /**
  * Defines an object containing all relevant parameters for a single call to the contract. Where TSignature is undefined, a bare call is made
  */
-export type TypedCallParams<TSignature extends ControlledAddressSig | undefined> = {
+export type TypedCallParams<TSignature extends Arc54Sig | undefined> = {
   method: TSignature
   methodArgs: TSignature extends undefined ? undefined : Array<ABIAppCallArg | undefined>
 } & AppClientCallCoreParams & CoreAppCallArgs
@@ -167,54 +191,54 @@ export type TypedCallParams<TSignature extends ControlledAddressSig | undefined>
  */
 export type BareCallArgs = Omit<RawAppCallArgs, keyof CoreAppCallArgs>
 /**
- * Maps a method signature from the ControlledAddress smart contract to the method's arguments in either tuple of struct form
+ * Maps a method signature from the Arc54 smart contract to the method's arguments in either tuple of struct form
  */
-export type MethodArgs<TSignature extends ControlledAddressSig> = ControlledAddress['methods'][TSignature]['argsObj' | 'argsTuple']
+export type MethodArgs<TSignature extends Arc54Sig> = Arc54['methods'][TSignature]['argsObj' | 'argsTuple']
 /**
- * Maps a method signature from the ControlledAddress smart contract to the method's return type
+ * Maps a method signature from the Arc54 smart contract to the method's return type
  */
-export type MethodReturn<TSignature extends ControlledAddressSig> = ControlledAddress['methods'][TSignature]['returns']
+export type MethodReturn<TSignature extends Arc54Sig> = Arc54['methods'][TSignature]['returns']
 
 /**
  * A factory for available 'create' calls
  */
-export type ControlledAddressCreateCalls = (typeof ControlledAddressCallFactory)['create']
+export type Arc54CreateCalls = (typeof Arc54CallFactory)['create']
 /**
  * Defines supported create methods for this smart contract
  */
-export type ControlledAddressCreateCallParams =
-  | (TypedCallParams<'new()address'> & (OnCompleteDelApp))
+export type Arc54CreateCallParams =
+  | (TypedCallParams<'createApplication()void'> & (OnCompleteNoOp))
 /**
  * Defines arguments required for the deploy method.
  */
-export type ControlledAddressDeployArgs = {
+export type Arc54DeployArgs = {
   deployTimeParams?: TealTemplateParams
   /**
    * A delegate which takes a create call factory and returns the create call params for this smart contract
    */
-  createCall?: (callFactory: ControlledAddressCreateCalls) => ControlledAddressCreateCallParams
+  createCall?: (callFactory: Arc54CreateCalls) => Arc54CreateCallParams
 }
 
 
 /**
  * Exposes methods for constructing all available smart contract calls
  */
-export abstract class ControlledAddressCallFactory {
+export abstract class Arc54CallFactory {
   /**
    * Gets available create call factories
    */
   static get create() {
     return {
       /**
-       * Constructs a create call for the ControlledAddress smart contract using the new()address ABI method
+       * Constructs a create call for the ARC54 smart contract using the createApplication()void ABI method
        *
        * @param args Any args for the contract call
        * @param params Any additional parameters for the call
        * @returns A TypedCallParams object for the call
        */
-      new(args: MethodArgs<'new()address'>, params: AppClientCallCoreParams & CoreAppCallArgs & AppClientCompilationParams & (OnCompleteDelApp)) {
+      createApplication(args: MethodArgs<'createApplication()void'>, params: AppClientCallCoreParams & CoreAppCallArgs & AppClientCompilationParams & (OnCompleteNoOp) = {}) {
         return {
-          method: 'new()address' as const,
+          method: 'createApplication()void' as const,
           methodArgs: Array.isArray(args) ? args : [],
           ...params,
         }
@@ -222,12 +246,26 @@ export abstract class ControlledAddressCallFactory {
     }
   }
 
+  /**
+   * Constructs a no op call for the arc54_optIntoASA(asset)void ABI method
+   *
+   * @param args Any args for the contract call
+   * @param params Any additional parameters for the call
+   * @returns A TypedCallParams object for the call
+   */
+  static arc54OptIntoAsa(args: MethodArgs<'arc54_optIntoASA(asset)void'>, params: AppClientCallCoreParams & CoreAppCallArgs) {
+    return {
+      method: 'arc54_optIntoASA(asset)void' as const,
+      methodArgs: Array.isArray(args) ? args : [args.asa],
+      ...params,
+    }
+  }
 }
 
 /**
- * A client to make calls to the ControlledAddress smart contract
+ * A client to make calls to the ARC54 smart contract
  */
-export class ControlledAddressClient {
+export class Arc54Client {
   /**
    * The underlying `ApplicationClient` for when you want to have more flexibility
    */
@@ -236,7 +274,7 @@ export class ControlledAddressClient {
   private readonly sender: SendTransactionFrom | undefined
 
   /**
-   * Creates a new instance of `ControlledAddressClient`
+   * Creates a new instance of `Arc54Client`
    *
    * @param appDetails appDetails The details to identify the app to deploy
    * @param algod An algod client instance
@@ -273,18 +311,18 @@ export class ControlledAddressClient {
    * @param returnValueFormatter An optional delegate which when provided will be used to map non-undefined return values to the target type
    * @returns The result of the smart contract call
    */
-  public async call<TSignature extends keyof ControlledAddress['methods']>(typedCallParams: TypedCallParams<TSignature>, returnValueFormatter?: (value: any) => MethodReturn<TSignature>) {
+  public async call<TSignature extends keyof Arc54['methods']>(typedCallParams: TypedCallParams<TSignature>, returnValueFormatter?: (value: any) => MethodReturn<TSignature>) {
     return this.mapReturnValue<MethodReturn<TSignature>>(await this.appClient.call(typedCallParams), returnValueFormatter)
   }
 
   /**
-   * Idempotently deploys the ControlledAddress smart contract.
+   * Idempotently deploys the ARC54 smart contract.
    *
    * @param params The arguments for the contract calls and any additional parameters for the call
    * @returns The deployment result
    */
-  public deploy(params: ControlledAddressDeployArgs & AppClientDeployCoreParams = {}): ReturnType<ApplicationClient['deploy']> {
-    const createArgs = params.createCall?.(ControlledAddressCallFactory.create)
+  public deploy(params: Arc54DeployArgs & AppClientDeployCoreParams = {}): ReturnType<ApplicationClient['deploy']> {
+    const createArgs = params.createCall?.(Arc54CallFactory.create)
     return this.appClient.deploy({
       ...params,
       createArgs,
@@ -299,20 +337,20 @@ export class ControlledAddressClient {
     const $this = this
     return {
       /**
-       * Creates a new instance of the ControlledAddress smart contract using the new()address ABI method.
+       * Creates a new instance of the ARC54 smart contract using the createApplication()void ABI method.
        *
        * @param args The arguments for the smart contract call
        * @param params Any additional parameters for the call
        * @returns The create result
        */
-      async new(args: MethodArgs<'new()address'>, params: AppClientCallCoreParams & AppClientCompilationParams & (OnCompleteDelApp)) {
-        return $this.mapReturnValue<MethodReturn<'new()address'>, AppCreateCallTransactionResult>(await $this.appClient.create(ControlledAddressCallFactory.create.new(args, params)))
+      async createApplication(args: MethodArgs<'createApplication()void'>, params: AppClientCallCoreParams & AppClientCompilationParams & (OnCompleteNoOp) = {}) {
+        return $this.mapReturnValue<MethodReturn<'createApplication()void'>, AppCreateCallTransactionResult>(await $this.appClient.create(Arc54CallFactory.create.createApplication(args, params)))
       },
     }
   }
 
   /**
-   * Makes a clear_state call to an existing instance of the ControlledAddress smart contract.
+   * Makes a clear_state call to an existing instance of the ARC54 smart contract.
    *
    * @param args The arguments for the bare call
    * @returns The clear_state result
@@ -321,12 +359,28 @@ export class ControlledAddressClient {
     return this.appClient.clearState(args)
   }
 
-  public compose(): ControlledAddressComposer {
+  /**
+   * Calls the arc54_optIntoASA(asset)void ABI method.
+   *
+   * @param args The arguments for the contract call
+   * @param params Any additional parameters for the call
+   * @returns The result of the call
+   */
+  public arc54OptIntoAsa(args: MethodArgs<'arc54_optIntoASA(asset)void'>, params: AppClientCallCoreParams & CoreAppCallArgs = {}) {
+    return this.call(Arc54CallFactory.arc54OptIntoAsa(args, params))
+  }
+
+  public compose(): Arc54Composer {
     const client = this
     const atc = new AtomicTransactionComposer()
     let promiseChain:Promise<unknown> = Promise.resolve()
     const resultMappers: Array<undefined | ((x: any) => any)> = []
     return {
+      arc54OptIntoAsa(args: MethodArgs<'arc54_optIntoASA(asset)void'>, params?: AppClientComposeCallCoreParams & CoreAppCallArgs) {
+        promiseChain = promiseChain.then(() => client.arc54OptIntoAsa(args, {...params, sendParams: {...params?.sendParams, skipSending: true, atc}}))
+        resultMappers.push(undefined)
+        return this
+      },
       clearState(args?: BareCallArgs & AppClientComposeCallCoreParams & CoreAppCallArgs) {
         promiseChain = promiseChain.then(() => client.clearState({...args, sendParams: {...args?.sendParams, skipSending: true, atc}}))
         resultMappers.push(undefined)
@@ -356,17 +410,26 @@ export class ControlledAddressClient {
           returns: result.returns?.map((val, i) => resultMappers[i] !== undefined ? resultMappers[i]!(val.returnValue) : val.returnValue)
         }
       }
-    } as unknown as ControlledAddressComposer
+    } as unknown as Arc54Composer
   }
 }
-export type ControlledAddressComposer<TReturns extends [...any[]] = []> = {
+export type Arc54Composer<TReturns extends [...any[]] = []> = {
   /**
-   * Makes a clear_state call to an existing instance of the ControlledAddress smart contract.
+   * Calls the arc54_optIntoASA(asset)void ABI method.
+   *
+   * @param args The arguments for the contract call
+   * @param params Any additional parameters for the call
+   * @returns The typed transaction composer so you can fluently chain multiple calls or call execute to execute all queued up transactions
+   */
+  arc54OptIntoAsa(args: MethodArgs<'arc54_optIntoASA(asset)void'>, params?: AppClientComposeCallCoreParams & CoreAppCallArgs): Arc54Composer<[...TReturns, MethodReturn<'arc54_optIntoASA(asset)void'>]>
+
+  /**
+   * Makes a clear_state call to an existing instance of the ARC54 smart contract.
    *
    * @param args The arguments for the bare call
    * @returns The typed transaction composer so you can fluently chain multiple calls or call execute to execute all queued up transactions
    */
-  clearState(args?: BareCallArgs & AppClientComposeCallCoreParams & CoreAppCallArgs): ControlledAddressComposer<[...TReturns, undefined]>
+  clearState(args?: BareCallArgs & AppClientComposeCallCoreParams & CoreAppCallArgs): Arc54Composer<[...TReturns, undefined]>
 
   /**
    * Adds a transaction to the composer
@@ -374,7 +437,7 @@ export type ControlledAddressComposer<TReturns extends [...any[]] = []> = {
    * @param txn One of: A TransactionWithSigner object (returned as is), a TransactionToSign object (signer is obtained from the signer property), a Transaction object (signer is extracted from the defaultSender parameter), an async SendTransactionResult returned by one of algokit utils helpers (signer is obtained from the defaultSender parameter)
    * @param defaultSender The default sender to be used to obtain a signer where the object provided to the transaction parameter does not include a signer.
    */
-  addTransaction(txn: TransactionWithSigner | TransactionToSign | Transaction | Promise<SendTransactionResult>, defaultSender?: SendTransactionFrom): ControlledAddressComposer<TReturns>
+  addTransaction(txn: TransactionWithSigner | TransactionToSign | Transaction | Promise<SendTransactionResult>, defaultSender?: SendTransactionFrom): Arc54Composer<TReturns>
   /**
    * Returns the underlying AtomicTransactionComposer instance
    */
@@ -382,19 +445,19 @@ export type ControlledAddressComposer<TReturns extends [...any[]] = []> = {
   /**
    * Simulates the transaction group and returns the result
    */
-  simulate(options?: SimulateOptions): Promise<ControlledAddressComposerSimulateResult<TReturns>>
+  simulate(options?: SimulateOptions): Promise<Arc54ComposerSimulateResult<TReturns>>
   /**
    * Executes the transaction group and returns the results
    */
-  execute(sendParams?: AppClientComposeExecuteParams): Promise<ControlledAddressComposerResults<TReturns>>
+  execute(sendParams?: AppClientComposeExecuteParams): Promise<Arc54ComposerResults<TReturns>>
 }
 export type SimulateOptions = Omit<ConstructorParameters<typeof modelsv2.SimulateRequest>[0], 'txnGroups'>
-export type ControlledAddressComposerSimulateResult<TReturns extends [...any[]]> = {
+export type Arc54ComposerSimulateResult<TReturns extends [...any[]]> = {
   returns: TReturns
   methodResults: ABIResult[]
   simulateResponse: modelsv2.SimulateResponse
 }
-export type ControlledAddressComposerResults<TReturns extends [...any[]]> = {
+export type Arc54ComposerResults<TReturns extends [...any[]]> = {
   returns: TReturns
   groupId: string
   txIds: string[]

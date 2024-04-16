@@ -3,6 +3,7 @@ import { algorandFixture } from '@algorandfoundation/algokit-utils/testing';
 import * as algokit from '@algorandfoundation/algokit-utils';
 import algosdk from 'algosdk';
 import { Arc59Client } from '../contracts/clients/Arc59Client';
+import { Arc54Client } from '../contracts/clients/ARC54Client';
 
 const fixture = algorandFixture();
 algokit.Config.configure({ populateAppCallResources: true });
@@ -71,6 +72,8 @@ describe('Arc59', () => {
   let assetTwo: number;
   let alice: algosdk.Account;
   let bob: algosdk.Account;
+  let arc54Client: Arc54Client;
+  let arc54id: number;
 
   beforeEach(fixture.beforeEach);
 
@@ -118,6 +121,19 @@ describe('Arc59', () => {
     await appClient.appClient.fundAppAccount({ amount: algokit.microAlgos(200_000) });
 
     alice = testAccount;
+
+    arc54Client = new Arc54Client(
+      {
+        sender: testAccount,
+        resolveBy: 'id',
+        id: 0,
+      },
+      algod
+    );
+
+    const result = await arc54Client.create.createApplication({});
+    await arc54Client.appClient.fundAppAccount(algokit.microAlgos(100_000));
+    arc54id = Number(result.appId);
   });
 
   test('routerOptIn', async () => {
@@ -162,5 +178,13 @@ describe('Arc59', () => {
     const bobAssetInfo = await algod.accountAssetInformation(bob.addr, assetOne).do();
 
     expect(bobAssetInfo['asset-holding'].amount).toBe(2);
+  });
+
+  test('burn', async () => {
+    await appClient.appClient.fundAppAccount(algokit.microAlgos(100_000));
+    await appClient.arc59Burn(
+      { asa: assetTwo, arc54App: arc54id },
+      { sender: bob, sendParams: { fee: algokit.algos(0.006) } }
+    );
   });
 });

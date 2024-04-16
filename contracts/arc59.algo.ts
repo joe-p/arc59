@@ -2,6 +2,7 @@
 
 // eslint-disable-next-line import/no-unresolved, import/extensions
 import { Contract } from '@algorandfoundation/tealscript';
+import { ARC54 } from './arc54.algo';
 
 class ControlledAddress extends Contract {
   @allow.create('DeleteApplication')
@@ -194,9 +195,8 @@ export class ARC59 extends Contract {
         amount: globals.assetOptInMinBalance,
       });
 
-      sendMethodCall<[AssetReference], void>({
+      sendMethodCall<typeof ARC54.prototype.arc54_optIntoASA>({
         sender: inbox,
-        name: 'arc54_optIntoASA',
         methodArgs: [asa],
         applicationID: arc54App,
       });
