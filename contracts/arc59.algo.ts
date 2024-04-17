@@ -204,8 +204,6 @@ export class ARC59 extends Contract {
       });
     }
 
-    const preMBR = inbox.minBalance;
-
     sendAssetTransfer({
       sender: inbox,
       assetReceiver: arc54App.address,
@@ -214,16 +212,10 @@ export class ARC59 extends Contract {
       assetCloseTo: arc54App.address,
     });
 
-    /**
-     * Probably unecessary, but track the MBR delta after opt out incase it differs from globals.assetOptInMinBalance.
-     * I imagine even with future MBR changes this wouldn't be a problem, but rather be extra safe here
-     */
-    const optOutAmount = preMBR - inbox.minBalance;
-
     sendPayment({
       sender: inbox,
       receiver: this.txn.sender,
-      amount: arc54OptedIn ? optOutAmount : optOutAmount - globals.assetOptInMinBalance,
+      amount: inbox.balance - inbox.minBalance,
     });
   }
 }
