@@ -162,8 +162,6 @@ export class ARC59 extends Contract {
   arc59_claim(asa: AssetID): void {
     const inbox = this.inboxes(this.txn.sender).value;
 
-    const preMBR = inbox.minBalance;
-
     sendAssetTransfer({
       sender: inbox,
       assetReceiver: this.txn.sender,
@@ -175,7 +173,7 @@ export class ARC59 extends Contract {
     sendPayment({
       sender: inbox,
       receiver: this.txn.sender,
-      amount: preMBR - inbox.minBalance,
+      amount: inbox.balance - inbox.minBalance,
     });
   }
 
