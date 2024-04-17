@@ -181,7 +181,6 @@ describe('Arc59', () => {
   });
 
   test('burn', async () => {
-    await appClient.appClient.fundAppAccount(algokit.microAlgos(100_000));
     await appClient.arc59Burn(
       { asa: assetTwo, arc54App: arc54id },
       { sender: bob, sendParams: { fee: algokit.algos(0.006) } }

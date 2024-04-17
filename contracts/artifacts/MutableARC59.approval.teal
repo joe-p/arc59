@@ -801,7 +801,7 @@ arc59_burn:
 
 	// Push empty bytes after the frame pointer to reserve space for local variables
 	byte 0x
-	dup
+	dupn 3
 
 	// contracts/arc59.algo.ts:189
 	// inbox = this.inboxes(this.txn.sender).value
@@ -810,9 +810,8 @@ arc59_burn:
 	assert
 	frame_bury 0 // inbox: address
 
-	// *if9_condition
-	// contracts/arc59.algo.ts:192
-	// !arc54App.address.isOptedInToAsset(asa)
+	// contracts/arc59.algo.ts:190
+	// arc54OptedIn = arc54App.address.isOptedInToAsset(asa)
 	frame_dig -2 // arc54App: AppID
 	app_params_get AppAddress
 	pop
@@ -820,12 +819,19 @@ arc59_burn:
 	asset_holding_get AssetBalance
 	swap
 	pop
+	frame_bury 1 // arc54OptedIn: bool
+
+	// *if9_condition
+	// contracts/arc59.algo.ts:193
+	// !arc54OptedIn
+	frame_dig 1 // arc54OptedIn: bool
 	!
 	bz *if9_end
 
 	// *if9_consequent
-	// contracts/arc59.algo.ts:193
+	// contracts/arc59.algo.ts:194
 	// sendPayment({
+	//         sender: inbox,
 	//         receiver: arc54App.address,
 	//         amount: globals.assetOptInMinBalance,
 	//       })
@@ -833,14 +839,19 @@ arc59_burn:
 	int pay
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:194
+	// contracts/arc59.algo.ts:195
+	// sender: inbox
+	frame_dig 0 // inbox: address
+	itxn_field Sender
+
+	// contracts/arc59.algo.ts:196
 	// receiver: arc54App.address
 	frame_dig -2 // arc54App: AppID
 	app_params_get AppAddress
 	pop
 	itxn_field Receiver
 
-	// contracts/arc59.algo.ts:195
+	// contracts/arc59.algo.ts:197
 	// amount: globals.assetOptInMinBalance
 	global AssetOptInMinBalance
 	itxn_field Amount
@@ -852,7 +863,7 @@ arc59_burn:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts/arc59.algo.ts:198
+	// contracts/arc59.algo.ts:200
 	// sendMethodCall<typeof ARC54.prototype.arc54_optIntoASA>({
 	//         sender: inbox,
 	//         methodArgs: [asa],
@@ -864,19 +875,19 @@ arc59_burn:
 	method "arc54_optIntoASA(asset)void"
 	itxn_field ApplicationArgs
 
-	// contracts/arc59.algo.ts:199
+	// contracts/arc59.algo.ts:201
 	// sender: inbox
 	frame_dig 0 // inbox: address
 	itxn_field Sender
 
-	// contracts/arc59.algo.ts:200
+	// contracts/arc59.algo.ts:202
 	// methodArgs: [asa]
 	frame_dig -1 // asa: AssetID
 	itxn_field Assets
 	byte 0x0000000000000000
 	itxn_field ApplicationArgs
 
-	// contracts/arc59.algo.ts:201
+	// contracts/arc59.algo.ts:203
 	// applicationID: arc54App
 	frame_dig -2 // arc54App: AppID
 	itxn_field ApplicationID
@@ -889,14 +900,14 @@ arc59_burn:
 	itxn_submit
 
 *if9_end:
-	// contracts/arc59.algo.ts:205
+	// contracts/arc59.algo.ts:207
 	// preMBR = inbox.minBalance
 	frame_dig 0 // inbox: address
 	acct_params_get AcctMinBalance
 	pop
-	frame_bury 1 // preMBR: uint64
+	frame_bury 2 // preMBR: uint64
 
-	// contracts/arc59.algo.ts:207
+	// contracts/arc59.algo.ts:209
 	// sendAssetTransfer({
 	//       sender: inbox,
 	//       assetReceiver: arc54App.address,
@@ -908,19 +919,19 @@ arc59_burn:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:208
+	// contracts/arc59.algo.ts:210
 	// sender: inbox
 	frame_dig 0 // inbox: address
 	itxn_field Sender
 
-	// contracts/arc59.algo.ts:209
+	// contracts/arc59.algo.ts:211
 	// assetReceiver: arc54App.address
 	frame_dig -2 // arc54App: AppID
 	app_params_get AppAddress
 	pop
 	itxn_field AssetReceiver
 
-	// contracts/arc59.algo.ts:210
+	// contracts/arc59.algo.ts:212
 	// assetAmount: inbox.assetBalance(asa)
 	frame_dig 0 // inbox: address
 	frame_dig -1 // asa: AssetID
@@ -928,12 +939,12 @@ arc59_burn:
 	pop
 	itxn_field AssetAmount
 
-	// contracts/arc59.algo.ts:211
+	// contracts/arc59.algo.ts:213
 	// xferAsset: asa
 	frame_dig -1 // asa: AssetID
 	itxn_field XferAsset
 
-	// contracts/arc59.algo.ts:212
+	// contracts/arc59.algo.ts:214
 	// assetCloseTo: arc54App.address
 	frame_dig -2 // arc54App: AppID
 	app_params_get AppAddress
@@ -947,33 +958,48 @@ arc59_burn:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts/arc59.algo.ts:215
+	// contracts/arc59.algo.ts:221
+	// optOutAmount = preMBR - inbox.minBalance
+	frame_dig 2 // preMBR: uint64
+	frame_dig 0 // inbox: address
+	acct_params_get AcctMinBalance
+	pop
+	-
+	frame_bury 3 // optOutAmount: uint64
+
+	// contracts/arc59.algo.ts:223
 	// sendPayment({
 	//       sender: inbox,
 	//       receiver: this.txn.sender,
-	//       amount: preMBR - inbox.minBalance,
+	//       amount: arc54OptedIn ? optOutAmount : optOutAmount - globals.assetOptInMinBalance,
 	//     })
 	itxn_begin
 	int pay
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:216
+	// contracts/arc59.algo.ts:224
 	// sender: inbox
 	frame_dig 0 // inbox: address
 	itxn_field Sender
 
-	// contracts/arc59.algo.ts:217
+	// contracts/arc59.algo.ts:225
 	// receiver: this.txn.sender
 	txn Sender
 	itxn_field Receiver
 
-	// contracts/arc59.algo.ts:218
-	// amount: preMBR - inbox.minBalance
-	frame_dig 1 // preMBR: uint64
-	frame_dig 0 // inbox: address
-	acct_params_get AcctMinBalance
-	pop
+	// contracts/arc59.algo.ts:226
+	// amount: arc54OptedIn ? optOutAmount : optOutAmount - globals.assetOptInMinBalance
+	frame_dig 1 // arc54OptedIn: bool
+	bz *ternary0_false
+	frame_dig 3 // optOutAmount: uint64
+	b *ternary0_end
+
+*ternary0_false:
+	frame_dig 3 // optOutAmount: uint64
+	global AssetOptInMinBalance
 	-
+
+*ternary0_end:
 	itxn_field Amount
 
 	// Fee field not set, defaulting to 0
