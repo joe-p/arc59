@@ -45,10 +45,13 @@ export class ARC59 extends Contract {
   }
 
   /**
-   * Gets an existing or create a inbox for the given address
+   * Gets the existing inbox for the receiver or creates a new one if it does not exist
+   *
+   * @param receiver The address to get or create the inbox for
+   * @returns The inbox address
    */
-  private getOrCreateInbox(addr: Address): Address {
-    if (this.inboxes(addr).exists) return this.inboxes(addr).value;
+  arc59_getOrCreateInbox(receiver: Address): Address {
+    if (this.inboxes(receiver).exists) return this.inboxes(receiver).value;
 
     const inbox = sendMethodCall<typeof ControlledAddress.prototype.new>({
       onCompletion: OnCompletion.DeleteApplication,
@@ -56,7 +59,7 @@ export class ARC59 extends Contract {
       clearStateProgram: ControlledAddress.clearProgram(),
     });
 
-    this.inboxes(addr).value = inbox;
+    this.inboxes(receiver).value = inbox;
 
     return inbox;
   }
@@ -134,7 +137,7 @@ export class ARC59 extends Contract {
     }
 
     const inboxExisted = this.inboxes(receiver).exists;
-    const inbox = this.getOrCreateInbox(receiver);
+    const inbox = this.arc59_getOrCreateInbox(receiver);
 
     if (!inbox.isOptedInToAsset(axfer.xferAsset)) {
       let inboxMbrDelta = globals.assetOptInMinBalance;
@@ -257,5 +260,16 @@ export class ARC59 extends Contract {
       receiver: this.txn.sender,
       amount: inbox.balance - inbox.minBalance,
     });
+  }
+
+  /**
+   * Get the inbox address for the given receiver
+   *
+   * @param receiver The receiver to get the inbox for
+   *
+   * @returns Zero address if the receiver does not yet have an inbox, otherwise the inbox address
+   */
+  arc59_getInbox(receiver: Address): Address {
+    return this.inboxes(receiver).exists ? this.inboxes(receiver).value : globals.zeroAddress;
   }
 }
