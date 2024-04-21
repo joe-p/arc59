@@ -3,6 +3,20 @@
   "desc": "",
   "methods": [
     {
+      "name": "createApplication",
+      "desc": "Deploy ARC59 contract and set the app ID of the ARC54 app to use for burning",
+      "args": [
+        {
+          "name": "burnApp",
+          "type": "uint64",
+          "desc": "The ARC54 app ID"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      }
+    },
+    {
       "name": "arc59_optRouterIn",
       "desc": "Opt the ARC59 router into the ASA. This is required before this app can be used to send the ASA to anyone.",
       "args": [
@@ -75,13 +89,7 @@
       "args": [
         {
           "name": "asa",
-          "type": "uint64",
-          "desc": "The ASA to burn"
-        },
-        {
-          "name": "arc54App",
-          "type": "uint64",
-          "desc": "The ARC54 app to burn the ASA to"
+          "type": "uint64"
         }
       ],
       "returns": {
@@ -89,8 +97,15 @@
       }
     },
     {
-      "name": "createApplication",
-      "args": [],
+      "name": "arc59_reject",
+      "desc": "Reject the ASA by closing it out to the ASA creator",
+      "args": [
+        {
+          "name": "asa",
+          "type": "uint64",
+          "desc": "The ASA to reject"
+        }
+      ],
       "returns": {
         "type": "void"
       }

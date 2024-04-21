@@ -116,10 +116,6 @@ describe('Arc59', () => {
     const twoResult = await algokit.sendAtomicTransactionComposer({ atc: atcTwo }, algod);
     assetTwo = Number(twoResult.confirmations![0].assetIndex);
 
-    await appClient.create.createApplication({});
-
-    await appClient.appClient.fundAppAccount({ amount: algokit.microAlgos(200_000) });
-
     alice = testAccount;
 
     arc54Client = new Arc54Client(
@@ -134,6 +130,10 @@ describe('Arc59', () => {
     const result = await arc54Client.create.createApplication({});
     await arc54Client.appClient.fundAppAccount(algokit.microAlgos(100_000));
     arc54id = Number(result.appId);
+
+    await appClient.create.createApplication({ burnApp: arc54id });
+
+    await appClient.appClient.fundAppAccount({ amount: algokit.microAlgos(200_000) });
   });
 
   test('routerOptIn', async () => {
@@ -181,9 +181,6 @@ describe('Arc59', () => {
   });
 
   test('burn', async () => {
-    await appClient.arc59Burn(
-      { asa: assetTwo, arc54App: arc54id },
-      { sender: bob, sendParams: { fee: algokit.algos(0.006) } }
-    );
+    await appClient.arc59Burn({ asa: assetTwo }, { sender: bob, sendParams: { fee: algokit.algos(0.006) } });
   });
 });

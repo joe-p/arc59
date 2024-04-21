@@ -18,6 +18,19 @@ class ControlledAddress extends Contract {
 export class ARC59 extends Contract {
   inboxes = BoxMap<Address, Address>();
 
+  burnApp = GlobalStateKey<AppID>();
+
+  /**
+   * Deploy ARC59 contract and set the app ID of the ARC54 app to use for burning
+   *
+   * @param burnApp The ARC54 app ID
+   */
+  createApplication(burnApp: AppID): void {
+    assert(this.txn.sender === this.app.creator);
+    assert(this.burnApp.value.id === 0);
+    this.burnApp.value = burnApp;
+  }
+
   /**
    * Opt the ARC59 router into the ASA. This is required before this app can be used to send the ASA to anyone.
    *
@@ -180,34 +193,56 @@ export class ARC59 extends Contract {
   /**
    * Burn the ASA from the inbox with ARC54
    *
-   * @param asa The ASA to burn
    * @param arc54App The ARC54 app to burn the ASA to
    */
-  arc59_burn(asa: AssetID, arc54App: AppID) {
+  arc59_burn(asa: AssetID) {
     const inbox = this.inboxes(this.txn.sender).value;
-    const arc54OptedIn = arc54App.address.isOptedInToAsset(asa);
+    const arc54OptedIn = this.burnApp.value.address.isOptedInToAsset(asa);
 
     // opt the arc54 app into the ASA if not already opted in
     if (!arc54OptedIn) {
       sendPayment({
         sender: inbox,
-        receiver: arc54App.address,
+        receiver: this.burnApp.value.address,
         amount: globals.assetOptInMinBalance,
       });
 
       sendMethodCall<typeof ARC54.prototype.arc54_optIntoASA>({
         sender: inbox,
         methodArgs: [asa],
-        applicationID: arc54App,
+        applicationID: this.burnApp.value,
       });
     }
 
     sendAssetTransfer({
       sender: inbox,
-      assetReceiver: arc54App.address,
+      assetReceiver: this.burnApp.value.address,
       assetAmount: inbox.assetBalance(asa),
       xferAsset: asa,
-      assetCloseTo: arc54App.address,
+      assetCloseTo: this.burnApp.value.address,
+    });
+
+    sendPayment({
+      sender: inbox,
+      receiver: this.txn.sender,
+      amount: inbox.balance - inbox.minBalance,
+    });
+  }
+
+  /**
+   * Reject the ASA by closing it out to the ASA creator
+   *
+   * @param asa The ASA to reject
+   */
+  arc59_reject(asa: AssetID) {
+    const inbox = this.inboxes(this.txn.sender).value;
+
+    sendAssetTransfer({
+      sender: inbox,
+      assetReceiver: asa.creator,
+      assetAmount: inbox.assetBalance(asa),
+      xferAsset: asa,
+      assetCloseTo: asa.creator,
     });
 
     sendPayment({
