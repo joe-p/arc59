@@ -192,8 +192,6 @@ export class ARC59 extends Contract {
 
   /**
    * Burn the ASA from the inbox with ARC54
-   *
-   * @param arc54App The ARC54 app to burn the ASA to
    */
   arc59_burn(asa: AssetID) {
     const inbox = this.inboxes(this.txn.sender).value;
