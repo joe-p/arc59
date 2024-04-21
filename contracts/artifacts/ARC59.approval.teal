@@ -825,7 +825,15 @@ arc59_claim:
 
 // arc59_burn(asa: AssetID): void
 //
-// Burn the ASA from the inbox with ARC54
+// Burn the ASA from the inbox with ARC54. Sends all non-MBR balance to caller.
+//
+// If the ARC54 app is not opted in:
+// - The ASA MBR in the inbox will be sent to the ARC54 app.
+// - A total of 5 inner transactions will be sent.
+//
+// If the ARC54 app is opted in:
+// - A total of 2 inner transactions will be sent.
+// - The ASA MBR in the inbox will be sent to the caller.
 arc59_burn:
 	proto 1 0
 
@@ -833,14 +841,14 @@ arc59_burn:
 	byte 0x
 	dup
 
-	// contracts/arc59.algo.ts:197
+	// contracts/arc59.algo.ts:205
 	// inbox = this.inboxes(this.txn.sender).value
 	txn Sender
 	box_get
 	assert
 	frame_bury 0 // inbox: address
 
-	// contracts/arc59.algo.ts:198
+	// contracts/arc59.algo.ts:206
 	// arc54OptedIn = this.burnApp.value.address.isOptedInToAsset(asa)
 	byte 0x6275726e417070 // "burnApp"
 	app_global_get
@@ -853,14 +861,14 @@ arc59_burn:
 	frame_bury 1 // arc54OptedIn: bool
 
 	// *if9_condition
-	// contracts/arc59.algo.ts:201
+	// contracts/arc59.algo.ts:209
 	// !arc54OptedIn
 	frame_dig 1 // arc54OptedIn: bool
 	!
 	bz *if9_end
 
 	// *if9_consequent
-	// contracts/arc59.algo.ts:202
+	// contracts/arc59.algo.ts:210
 	// sendPayment({
 	//         sender: inbox,
 	//         receiver: this.burnApp.value.address,
@@ -870,12 +878,12 @@ arc59_burn:
 	int pay
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:203
+	// contracts/arc59.algo.ts:211
 	// sender: inbox
 	frame_dig 0 // inbox: address
 	itxn_field Sender
 
-	// contracts/arc59.algo.ts:204
+	// contracts/arc59.algo.ts:212
 	// receiver: this.burnApp.value.address
 	byte 0x6275726e417070 // "burnApp"
 	app_global_get
@@ -883,7 +891,7 @@ arc59_burn:
 	pop
 	itxn_field Receiver
 
-	// contracts/arc59.algo.ts:205
+	// contracts/arc59.algo.ts:213
 	// amount: globals.assetOptInMinBalance
 	global AssetOptInMinBalance
 	itxn_field Amount
@@ -895,7 +903,7 @@ arc59_burn:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts/arc59.algo.ts:208
+	// contracts/arc59.algo.ts:216
 	// sendMethodCall<typeof ARC54.prototype.arc54_optIntoASA>({
 	//         sender: inbox,
 	//         methodArgs: [asa],
@@ -907,19 +915,19 @@ arc59_burn:
 	method "arc54_optIntoASA(asset)void"
 	itxn_field ApplicationArgs
 
-	// contracts/arc59.algo.ts:209
+	// contracts/arc59.algo.ts:217
 	// sender: inbox
 	frame_dig 0 // inbox: address
 	itxn_field Sender
 
-	// contracts/arc59.algo.ts:210
+	// contracts/arc59.algo.ts:218
 	// methodArgs: [asa]
 	frame_dig -1 // asa: AssetID
 	itxn_field Assets
 	byte 0x0000000000000000
 	itxn_field ApplicationArgs
 
-	// contracts/arc59.algo.ts:211
+	// contracts/arc59.algo.ts:219
 	// applicationID: this.burnApp.value
 	byte 0x6275726e417070 // "burnApp"
 	app_global_get
@@ -933,7 +941,7 @@ arc59_burn:
 	itxn_submit
 
 *if9_end:
-	// contracts/arc59.algo.ts:215
+	// contracts/arc59.algo.ts:223
 	// sendAssetTransfer({
 	//       sender: inbox,
 	//       assetReceiver: this.burnApp.value.address,
@@ -945,12 +953,12 @@ arc59_burn:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:216
+	// contracts/arc59.algo.ts:224
 	// sender: inbox
 	frame_dig 0 // inbox: address
 	itxn_field Sender
 
-	// contracts/arc59.algo.ts:217
+	// contracts/arc59.algo.ts:225
 	// assetReceiver: this.burnApp.value.address
 	byte 0x6275726e417070 // "burnApp"
 	app_global_get
@@ -958,7 +966,7 @@ arc59_burn:
 	pop
 	itxn_field AssetReceiver
 
-	// contracts/arc59.algo.ts:218
+	// contracts/arc59.algo.ts:226
 	// assetAmount: inbox.assetBalance(asa)
 	frame_dig 0 // inbox: address
 	frame_dig -1 // asa: AssetID
@@ -966,12 +974,12 @@ arc59_burn:
 	pop
 	itxn_field AssetAmount
 
-	// contracts/arc59.algo.ts:219
+	// contracts/arc59.algo.ts:227
 	// xferAsset: asa
 	frame_dig -1 // asa: AssetID
 	itxn_field XferAsset
 
-	// contracts/arc59.algo.ts:220
+	// contracts/arc59.algo.ts:228
 	// assetCloseTo: this.burnApp.value.address
 	byte 0x6275726e417070 // "burnApp"
 	app_global_get
@@ -986,7 +994,7 @@ arc59_burn:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts/arc59.algo.ts:223
+	// contracts/arc59.algo.ts:231
 	// sendPayment({
 	//       sender: inbox,
 	//       receiver: this.txn.sender,
@@ -996,17 +1004,17 @@ arc59_burn:
 	int pay
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:224
+	// contracts/arc59.algo.ts:232
 	// sender: inbox
 	frame_dig 0 // inbox: address
 	itxn_field Sender
 
-	// contracts/arc59.algo.ts:225
+	// contracts/arc59.algo.ts:233
 	// receiver: this.txn.sender
 	txn Sender
 	itxn_field Receiver
 
-	// contracts/arc59.algo.ts:226
+	// contracts/arc59.algo.ts:234
 	// amount: inbox.balance - inbox.minBalance
 	frame_dig 0 // inbox: address
 	acct_params_get AcctBalance
@@ -1038,7 +1046,8 @@ arc59_burn:
 
 // arc59_reject(asa: AssetID): void
 //
-// Reject the ASA by closing it out to the ASA creator
+// Reject the ASA by closing it out to the ASA creator. Always sends two inner transactions.
+// All non-MBR ALGO balance in the inbox will be sent to the caller.
 //
 // @param asa The ASA to reject
 arc59_reject:
@@ -1047,14 +1056,14 @@ arc59_reject:
 	// Push empty bytes after the frame pointer to reserve space for local variables
 	byte 0x
 
-	// contracts/arc59.algo.ts:236
+	// contracts/arc59.algo.ts:245
 	// inbox = this.inboxes(this.txn.sender).value
 	txn Sender
 	box_get
 	assert
 	frame_bury 0 // inbox: address
 
-	// contracts/arc59.algo.ts:238
+	// contracts/arc59.algo.ts:247
 	// sendAssetTransfer({
 	//       sender: inbox,
 	//       assetReceiver: asa.creator,
@@ -1066,19 +1075,19 @@ arc59_reject:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:239
+	// contracts/arc59.algo.ts:248
 	// sender: inbox
 	frame_dig 0 // inbox: address
 	itxn_field Sender
 
-	// contracts/arc59.algo.ts:240
+	// contracts/arc59.algo.ts:249
 	// assetReceiver: asa.creator
 	frame_dig -1 // asa: AssetID
 	asset_params_get AssetCreator
 	pop
 	itxn_field AssetReceiver
 
-	// contracts/arc59.algo.ts:241
+	// contracts/arc59.algo.ts:250
 	// assetAmount: inbox.assetBalance(asa)
 	frame_dig 0 // inbox: address
 	frame_dig -1 // asa: AssetID
@@ -1086,12 +1095,12 @@ arc59_reject:
 	pop
 	itxn_field AssetAmount
 
-	// contracts/arc59.algo.ts:242
+	// contracts/arc59.algo.ts:251
 	// xferAsset: asa
 	frame_dig -1 // asa: AssetID
 	itxn_field XferAsset
 
-	// contracts/arc59.algo.ts:243
+	// contracts/arc59.algo.ts:252
 	// assetCloseTo: asa.creator
 	frame_dig -1 // asa: AssetID
 	asset_params_get AssetCreator
@@ -1105,7 +1114,7 @@ arc59_reject:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts/arc59.algo.ts:246
+	// contracts/arc59.algo.ts:255
 	// sendPayment({
 	//       sender: inbox,
 	//       receiver: this.txn.sender,
@@ -1115,17 +1124,17 @@ arc59_reject:
 	int pay
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:247
+	// contracts/arc59.algo.ts:256
 	// sender: inbox
 	frame_dig 0 // inbox: address
 	itxn_field Sender
 
-	// contracts/arc59.algo.ts:248
+	// contracts/arc59.algo.ts:257
 	// receiver: this.txn.sender
 	txn Sender
 	itxn_field Receiver
 
-	// contracts/arc59.algo.ts:249
+	// contracts/arc59.algo.ts:258
 	// amount: inbox.balance - inbox.minBalance
 	frame_dig 0 // inbox: address
 	acct_params_get AcctBalance

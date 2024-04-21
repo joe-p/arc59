@@ -85,7 +85,7 @@
     },
     {
       "name": "arc59_burn",
-      "desc": "Burn the ASA from the inbox with ARC54",
+      "desc": "Burn the ASA from the inbox with ARC54. Sends all non-MBR balance to caller.If the ARC54 app is not opted in:- The ASA MBR in the inbox will be sent to the ARC54 app.- A total of 5 inner transactions will be sent.If the ARC54 app is opted in:- A total of 2 inner transactions will be sent.- The ASA MBR in the inbox will be sent to the caller.",
       "args": [
         {
           "name": "asa",
@@ -98,7 +98,7 @@
     },
     {
       "name": "arc59_reject",
-      "desc": "Reject the ASA by closing it out to the ASA creator",
+      "desc": "Reject the ASA by closing it out to the ASA creator. Always sends two inner transactions.All non-MBR ALGO balance in the inbox will be sent to the caller.",
       "args": [
         {
           "name": "asa",

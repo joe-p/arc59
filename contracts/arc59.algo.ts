@@ -191,7 +191,15 @@ export class ARC59 extends Contract {
   }
 
   /**
-   * Burn the ASA from the inbox with ARC54
+   * Burn the ASA from the inbox with ARC54. Sends all non-MBR balance to caller.
+   *
+   * If the ARC54 app is not opted in:
+   * - The ASA MBR in the inbox will be sent to the ARC54 app.
+   * - A total of 5 inner transactions will be sent.
+   *
+   * If the ARC54 app is opted in:
+   * - A total of 2 inner transactions will be sent.
+   * - The ASA MBR in the inbox will be sent to the caller.
    */
   arc59_burn(asa: AssetID) {
     const inbox = this.inboxes(this.txn.sender).value;
@@ -228,7 +236,8 @@ export class ARC59 extends Contract {
   }
 
   /**
-   * Reject the ASA by closing it out to the ASA creator
+   * Reject the ASA by closing it out to the ASA creator. Always sends two inner transactions.
+   * All non-MBR ALGO balance in the inbox will be sent to the caller.
    *
    * @param asa The ASA to reject
    */
