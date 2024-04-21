@@ -167,4 +167,14 @@ describe('Arc59', () => {
   test('burn', async () => {
     await appClient.arc59Burn({ asa: assetTwo }, { sender: bob, sendParams: { fee: algokit.algos(0.006) } });
   });
+
+  test('reject', async () => {
+    const { algorand } = fixture;
+    const newAsset = BigInt(
+      (await algorand.send.assetCreate({ sender: alice.addr, total: 1n })).confirmation.assetIndex!
+    );
+    await sendAsset(appClient, newAsset, alice.addr, alice, bob.addr, algorand);
+
+    await appClient.arc59Reject({ asa: newAsset }, { sender: bob, sendParams: { fee: algokit.algos(0.003) } });
+  });
 });
