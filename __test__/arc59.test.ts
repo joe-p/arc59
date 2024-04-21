@@ -55,9 +55,29 @@ async function sendAsset(
     composer.arc59OptRouterIn({ asa: assetId });
   }
 
+  // Disable resource population to ensure that our manually defined resources are correct
+  algokit.Config.configure({ populateAppCallResources: false });
+
+  /** The box of the receiver's pubkey will always be needed */
+  const boxes = [algosdk.decodeAddress(receiver).publicKey];
+
+  /** The address of the receiver's inbox */
+  const inboxAddress = (await appClient.compose().arc59GetInbox({ receiver }, { boxes }).simulate()).returns[0];
   await composer
-    .arc59SendAsset({ axfer, receiver }, { sendParams: { fee: algokit.microAlgos(1000 + 1000 * Number(itxns)) } })
+    .arc59SendAsset(
+      { axfer, receiver },
+      {
+        sendParams: { fee: algokit.microAlgos(1000 + 1000 * Number(itxns)) },
+        boxes, // The receiver's pubkey
+        // Always good to include both accounts here, even if we think only the receiver is needed. This is to help protect against race conditions within a block.
+        accounts: [receiver, inboxAddress],
+        // Even though the asset is available in the group, we need to explicitly define it here because we will be checking the asset balance of the receiver
+        assets: [Number(assetId)],
+      }
+    )
     .execute();
+
+  algokit.Config.configure({ populateAppCallResources: true });
 }
 
 describe('Arc59', () => {
