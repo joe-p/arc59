@@ -26,8 +26,6 @@ export class ARC59 extends Contract {
    * @param burnApp The ARC54 app ID
    */
   createApplication(burnApp: AppID): void {
-    assert(this.txn.sender === this.app.creator);
-    assert(this.burnApp.value.id === 0);
     this.burnApp.value = burnApp;
   }
 
