@@ -2,7 +2,6 @@
 
 // eslint-disable-next-line import/no-unresolved, import/extensions
 import { Contract } from '@algorandfoundation/tealscript';
-import { ARC54 } from './arc54.algo';
 
 class ControlledAddress extends Contract {
   @allow.create('DeleteApplication')
@@ -18,16 +17,11 @@ class ControlledAddress extends Contract {
 export class ARC59 extends Contract {
   inboxes = BoxMap<Address, Address>();
 
-  burnApp = GlobalStateKey<AppID>();
-
   /**
-   * Deploy ARC59 contract and set the app ID of the ARC54 app to use for burning
+   * Deploy ARC59 contract
    *
-   * @param burnApp The ARC54 app ID
    */
-  createApplication(burnApp: AppID): void {
-    this.burnApp.value = burnApp;
-  }
+  createApplication(): void {}
 
   /**
    * Opt the ARC59 router into the ASA. This is required before this app can be used to send the ASA to anyone.
@@ -182,51 +176,6 @@ export class ARC59 extends Contract {
       assetAmount: inbox.assetBalance(asa),
       xferAsset: asa,
       assetCloseTo: this.txn.sender,
-    });
-
-    sendPayment({
-      sender: inbox,
-      receiver: this.txn.sender,
-      amount: inbox.balance - inbox.minBalance,
-    });
-  }
-
-  /**
-   * Burn the ASA from the inbox with ARC54. Sends all non-MBR balance to caller.
-   *
-   * If the ARC54 app is not opted in:
-   * - The ASA MBR in the inbox will be sent to the ARC54 app.
-   * - A total of 5 inner transactions will be sent.
-   *
-   * If the ARC54 app is opted in:
-   * - A total of 2 inner transactions will be sent.
-   * - The ASA MBR in the inbox will be sent to the caller.
-   */
-  arc59_burn(asa: AssetID) {
-    const inbox = this.inboxes(this.txn.sender).value;
-    const arc54OptedIn = this.burnApp.value.address.isOptedInToAsset(asa);
-
-    // opt the arc54 app into the ASA if not already opted in
-    if (!arc54OptedIn) {
-      sendPayment({
-        sender: inbox,
-        receiver: this.burnApp.value.address,
-        amount: globals.assetOptInMinBalance,
-      });
-
-      sendMethodCall<typeof ARC54.prototype.arc54_optIntoASA>({
-        sender: inbox,
-        methodArgs: [asa],
-        applicationID: this.burnApp.value,
-      });
-    }
-
-    sendAssetTransfer({
-      sender: inbox,
-      assetReceiver: this.burnApp.value.address,
-      assetAmount: inbox.assetBalance(asa),
-      xferAsset: asa,
-      assetCloseTo: this.burnApp.value.address,
     });
 
     sendPayment({

@@ -3,7 +3,6 @@ import { algorandFixture } from '@algorandfoundation/algokit-utils/testing';
 import * as algokit from '@algorandfoundation/algokit-utils';
 import algosdk from 'algosdk';
 import { Arc59Client } from '../contracts/clients/Arc59Client';
-import { Arc54Client } from '../contracts/clients/ARC54Client';
 
 const fixture = algorandFixture();
 algokit.Config.configure({ populateAppCallResources: true });
@@ -86,8 +85,6 @@ describe('Arc59', () => {
   let assetTwo: bigint;
   let alice: algosdk.Account;
   let bob: algosdk.Account;
-  let arc54Client: Arc54Client;
-  let arc54id: number;
 
   beforeEach(fixture.beforeEach);
 
@@ -121,20 +118,7 @@ describe('Arc59', () => {
 
     alice = testAccount;
 
-    arc54Client = new Arc54Client(
-      {
-        sender: testAccount,
-        resolveBy: 'id',
-        id: 0,
-      },
-      algorand.client.algod
-    );
-
-    const result = await arc54Client.create.createApplication({});
-    await arc54Client.appClient.fundAppAccount(algokit.microAlgos(100_000));
-    arc54id = Number(result.appId);
-
-    await appClient.create.createApplication({ burnApp: arc54id });
+    await appClient.create.createApplication({});
 
     await appClient.appClient.fundAppAccount({ amount: algokit.microAlgos(200_000) });
   });
@@ -182,10 +166,6 @@ describe('Arc59', () => {
     const bobAssetInfo = await algorand.account.getAssetInformation(bob.addr, assetOne);
 
     expect(bobAssetInfo.balance).toBe(2n);
-  });
-
-  test('burn', async () => {
-    await appClient.arc59Burn({ asa: assetTwo }, { sender: bob, sendParams: { fee: algokit.algos(0.006) } });
   });
 
   test('reject', async () => {

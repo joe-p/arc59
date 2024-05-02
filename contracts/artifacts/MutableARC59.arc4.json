@@ -4,14 +4,8 @@
   "methods": [
     {
       "name": "createApplication",
-      "desc": "Deploy ARC59 contract and set the app ID of the ARC54 app to use for burning",
-      "args": [
-        {
-          "name": "burnApp",
-          "type": "uint64",
-          "desc": "The ARC54 app ID"
-        }
-      ],
+      "desc": "Deploy ARC59 contract",
+      "args": [],
       "returns": {
         "type": "void"
       }
@@ -92,19 +86,6 @@
           "name": "asa",
           "type": "uint64",
           "desc": "The ASA to claim"
-        }
-      ],
-      "returns": {
-        "type": "void"
-      }
-    },
-    {
-      "name": "arc59_burn",
-      "desc": "Burn the ASA from the inbox with ARC54. Sends all non-MBR balance to caller.If the ARC54 app is not opted in:- The ASA MBR in the inbox will be sent to the ARC54 app.- A total of 5 inner transactions will be sent.If the ARC54 app is opted in:- A total of 2 inner transactions will be sent.- The ASA MBR in the inbox will be sent to the caller.",
-      "args": [
-        {
-          "name": "asa",
-          "type": "uint64"
         }
       ],
       "returns": {
