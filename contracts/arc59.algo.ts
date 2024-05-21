@@ -63,7 +63,7 @@ export class ARC59 extends Contract {
    *
    * @returns The number of itxns sent and the MBR required to send the asset to the receiver
    */
-  arc59_getAssetSendInfo(receiver: Address, asset: AssetID): { itxns: uint64; mbr: uint64 } {
+  arc59_getSendAssetInfo(receiver: Address, asset: AssetID): { itxns: uint64; mbr: uint64 } {
     const info: { itxns: uint64; mbr: uint64 } = { itxns: 1, mbr: 0 };
 
     if (receiver.isOptedInToAsset(asset)) return info;

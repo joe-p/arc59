@@ -17,7 +17,7 @@ async function sendAsset(
 ) {
   const arc59RouterAddress = (await appClient.appClient.getAppReference()).appAddress;
 
-  const [itxns, mbr] = (await appClient.arc59GetAssetSendInfo({ asset: assetId, receiver })).return!;
+  const [itxns, mbr] = (await appClient.arc59GetSendAssetInfo({ asset: assetId, receiver })).return!;
 
   const composer = appClient.compose();
 
@@ -127,8 +127,8 @@ describe('Arc59', () => {
     await appClient.arc59OptRouterIn({ asa: assetOne }, { sendParams: { fee: algokit.microAlgos(2_000) } });
   });
 
-  test('Brand new account getAssetSendInfo', async () => {
-    const res = await appClient.arc59GetAssetSendInfo({ asset: assetOne, receiver: algosdk.generateAccount().addr });
+  test('Brand new account getSendAssetInfo', async () => {
+    const res = await appClient.arc59GetSendAssetInfo({ asset: assetOne, receiver: algosdk.generateAccount().addr });
 
     const itxns = res.return![0];
     const mbr = res.return![1];

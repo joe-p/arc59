@@ -40,7 +40,7 @@
       }
     },
     {
-      "name": "arc59_getAssetSendInfo",
+      "name": "arc59_getSendAssetInfo",
       "args": [
         {
           "name": "receiver",

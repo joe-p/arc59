@@ -192,8 +192,8 @@ arc59_getOrCreateInbox:
 	frame_bury 0
 	retsub
 
-// arc59_getAssetSendInfo(address,uint64)(uint64,uint64)
-*abi_route_arc59_getAssetSendInfo:
+// arc59_getSendAssetInfo(address,uint64)(uint64,uint64)
+*abi_route_arc59_getSendAssetInfo:
 	// The ABI return prefix
 	byte 0x151f7c75
 
@@ -209,21 +209,21 @@ arc59_getOrCreateInbox:
 	==
 	assert
 
-	// execute arc59_getAssetSendInfo(address,uint64)(uint64,uint64)
-	callsub arc59_getAssetSendInfo
+	// execute arc59_getSendAssetInfo(address,uint64)(uint64,uint64)
+	callsub arc59_getSendAssetInfo
 	concat
 	log
 	int 1
 	return
 
-// arc59_getAssetSendInfo(receiver: Address, asset: AssetID): { itxns: uint64; mbr: uint64 }
+// arc59_getSendAssetInfo(receiver: Address, asset: AssetID): { itxns: uint64; mbr: uint64 }
 //
 //
 // @param receiver The address to send the asset to
 // @param asset The asset to send
 //
 // @returns The number of itxns sent and the MBR required to send the asset to the receiver
-arc59_getAssetSendInfo:
+arc59_getSendAssetInfo:
 	proto 2 1
 
 	// Push empty bytes after the frame pointer to reserve space for local variables
@@ -249,7 +249,7 @@ arc59_getAssetSendInfo:
 	// contracts/arc59.algo.ts:69
 	// return info;
 	frame_dig 0 // info: { itxns: uint64; mbr: uint64 }
-	b *arc59_getAssetSendInfo*return
+	b *arc59_getSendAssetInfo*return
 
 *if1_end:
 	// *if2_condition
@@ -319,7 +319,7 @@ arc59_getAssetSendInfo:
 	// contracts/arc59.algo.ts:86
 	// return info;
 	frame_dig 0 // info: { itxns: uint64; mbr: uint64 }
-	b *arc59_getAssetSendInfo*return
+	b *arc59_getSendAssetInfo*return
 
 *if2_end:
 	// contracts/arc59.algo.ts:89
@@ -399,7 +399,7 @@ arc59_getAssetSendInfo:
 	// return info;
 	frame_dig 0 // info: { itxns: uint64; mbr: uint64 }
 
-*arc59_getAssetSendInfo*return:
+*arc59_getSendAssetInfo*return:
 	// set the subroutine return value
 	frame_bury 0
 
@@ -1004,13 +1004,13 @@ updateApplication:
 *call_NoOp:
 	method "arc59_optRouterIn(uint64)void"
 	method "arc59_getOrCreateInbox(address)address"
-	method "arc59_getAssetSendInfo(address,uint64)(uint64,uint64)"
+	method "arc59_getSendAssetInfo(address,uint64)(uint64,uint64)"
 	method "arc59_sendAsset(axfer,address)address"
 	method "arc59_claim(uint64)void"
 	method "arc59_reject(uint64)void"
 	method "arc59_getInbox(address)address"
 	txna ApplicationArgs 0
-	match *abi_route_arc59_optRouterIn *abi_route_arc59_getOrCreateInbox *abi_route_arc59_getAssetSendInfo *abi_route_arc59_sendAsset *abi_route_arc59_claim *abi_route_arc59_reject *abi_route_arc59_getInbox
+	match *abi_route_arc59_optRouterIn *abi_route_arc59_getOrCreateInbox *abi_route_arc59_getSendAssetInfo *abi_route_arc59_sendAsset *abi_route_arc59_claim *abi_route_arc59_reject *abi_route_arc59_getInbox
 	err
 
 *call_UpdateApplication:
