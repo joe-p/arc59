@@ -4,9 +4,16 @@
 import { Contract } from '@algorandfoundation/tealscript';
 
 type SendAssetInfo = {
+  /**
+   * The total number of inner transactions required to send the asset through the router.
+   * This should be used to add extra fees to the app call
+   */
   itxns: uint64;
+  /** The total MBR the router needs to send the asset through the router. */
   mbr: uint64;
+  /** Whether the router is already opted in to the asset or not */
   routerOptedIn: boolean;
+  /** Whether the receiver is already directly opted in to the asset or not */
   receiverOptedIn: boolean;
 };
 
