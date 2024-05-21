@@ -17,7 +17,20 @@ async function sendAsset(
 ) {
   const arc59RouterAddress = (await appClient.appClient.getAppReference()).appAddress;
 
-  const [itxns, mbr, routerOptedIn] = (await appClient.arc59GetSendAssetInfo({ asset: assetId, receiver })).return!;
+  const [itxns, mbr, routerOptedIn, receiverOptedIn] = (
+    await appClient.arc59GetSendAssetInfo({ asset: assetId, receiver })
+  ).return!;
+
+  if (receiverOptedIn) {
+    await algorand.send.assetTransfer({
+      sender,
+      receiver,
+      assetId,
+      amount: 1n,
+    });
+
+    return;
+  }
 
   const composer = appClient.compose();
 

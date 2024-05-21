@@ -54,7 +54,7 @@
         }
       ],
       "returns": {
-        "type": "(uint64,uint64,bool)",
+        "type": "(uint64,uint64,bool,bool)",
         "desc": "The number of itxns sent and the MBR required to send the asset to the receiver"
       }
     },

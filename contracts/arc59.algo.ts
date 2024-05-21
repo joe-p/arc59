@@ -7,6 +7,7 @@ type SendAssetInfo = {
   itxns: uint64;
   mbr: uint64;
   routerOptedIn: boolean;
+  receiverOptedIn: boolean;
 };
 
 class ControlledAddress extends Contract {
@@ -71,9 +72,10 @@ export class ARC59 extends Contract {
    */
   arc59_getSendAssetInfo(receiver: Address, asset: AssetID): SendAssetInfo {
     const routerOptedIn = this.app.address.isOptedInToAsset(asset);
-    const info: SendAssetInfo = { itxns: 1, mbr: 0, routerOptedIn: routerOptedIn };
+    const receiverOptedIn = receiver.isOptedInToAsset(asset);
+    const info: SendAssetInfo = { itxns: 1, mbr: 0, routerOptedIn: routerOptedIn, receiverOptedIn: receiverOptedIn };
 
-    if (receiver.isOptedInToAsset(asset)) return info;
+    if (receiverOptedIn) return info;
 
     if (!routerOptedIn) {
       info.mbr += globals.assetOptInMinBalance;
