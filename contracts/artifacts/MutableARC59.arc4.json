@@ -40,7 +40,7 @@
       }
     },
     {
-      "name": "arc59_getAssetSendInfo",
+      "name": "arc59_getSendAssetInfo",
       "args": [
         {
           "name": "receiver",
@@ -54,7 +54,7 @@
         }
       ],
       "returns": {
-        "type": "(uint64,uint64)",
+        "type": "(uint64,uint64,bool,bool)",
         "desc": "The number of itxns sent and the MBR required to send the asset to the receiver"
       }
     },

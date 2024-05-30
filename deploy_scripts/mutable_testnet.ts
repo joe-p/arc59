@@ -66,7 +66,7 @@ async function deploy() {
   const receiver = algosdk.generateAccount().addr;
   const arc59RouterAddress = (await appClient.appClient.getAppReference()).appAddress;
 
-  const sendInfo = (await appClient.arc59GetAssetSendInfo({ asset: assetId, receiver })).return;
+  const sendInfo = (await appClient.arc59getSendAssetInfo({ asset: assetId, receiver })).return;
 
   const itxns = sendInfo![0];
   const mbr = sendInfo![1];

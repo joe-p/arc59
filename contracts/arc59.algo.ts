@@ -3,6 +3,20 @@
 // eslint-disable-next-line import/no-unresolved, import/extensions
 import { Contract } from '@algorandfoundation/tealscript';
 
+type SendAssetInfo = {
+  /**
+   * The total number of inner transactions required to send the asset through the router.
+   * This should be used to add extra fees to the app call
+   */
+  itxns: uint64;
+  /** The total MBR the router needs to send the asset through the router. */
+  mbr: uint64;
+  /** Whether the router is already opted in to the asset or not */
+  routerOptedIn: boolean;
+  /** Whether the receiver is already directly opted in to the asset or not */
+  receiverOptedIn: boolean;
+};
+
 class ControlledAddress extends Contract {
   @allow.create('DeleteApplication')
   new(): Address {
@@ -63,10 +77,17 @@ export class ARC59 extends Contract {
    *
    * @returns The number of itxns sent and the MBR required to send the asset to the receiver
    */
-  arc59_getAssetSendInfo(receiver: Address, asset: AssetID): { itxns: uint64; mbr: uint64 } {
-    const info: { itxns: uint64; mbr: uint64 } = { itxns: 1, mbr: 0 };
+  arc59_getSendAssetInfo(receiver: Address, asset: AssetID): SendAssetInfo {
+    const routerOptedIn = this.app.address.isOptedInToAsset(asset);
+    const receiverOptedIn = receiver.isOptedInToAsset(asset);
+    const info: SendAssetInfo = { itxns: 1, mbr: 0, routerOptedIn: routerOptedIn, receiverOptedIn: receiverOptedIn };
 
-    if (receiver.isOptedInToAsset(asset)) return info;
+    if (receiverOptedIn) return info;
+
+    if (!routerOptedIn) {
+      info.mbr += globals.assetOptInMinBalance;
+      info.itxns += 1;
+    }
 
     if (!this.inboxes(receiver).exists) {
       // Two itxns to create inbox (create + rekey)
@@ -81,7 +102,7 @@ export class ARC59 extends Contract {
       this.inboxes(receiver).delete();
 
       // MBR = MBR for the box + min balance for the inbox + ASA MBR
-      info.mbr = boxMbrDelta + globals.minBalance + globals.assetOptInMinBalance;
+      info.mbr += boxMbrDelta + globals.minBalance + globals.assetOptInMinBalance;
 
       return info;
     }
@@ -97,7 +118,7 @@ export class ARC59 extends Contract {
         info.itxns += 1;
 
         // MBR = ASA MBR
-        info.mbr = globals.assetOptInMinBalance;
+        info.mbr += globals.assetOptInMinBalance;
       }
     }
 

@@ -54,7 +54,7 @@ createApplication:
 arc59_optRouterIn:
 	proto 1 0
 
-	// contracts/arc59.algo.ts:32
+	// contracts/arc59.algo.ts:39
 	// sendAssetTransfer({
 	//       assetReceiver: this.app.address,
 	//       assetAmount: 0,
@@ -64,17 +64,17 @@ arc59_optRouterIn:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:33
+	// contracts/arc59.algo.ts:40
 	// assetReceiver: this.app.address
 	global CurrentApplicationAddress
 	itxn_field AssetReceiver
 
-	// contracts/arc59.algo.ts:34
+	// contracts/arc59.algo.ts:41
 	// assetAmount: 0
 	int 0
 	itxn_field AssetAmount
 
-	// contracts/arc59.algo.ts:35
+	// contracts/arc59.algo.ts:42
 	// xferAsset: asa
 	frame_dig -1 // asa: AssetID
 	itxn_field XferAsset
@@ -120,7 +120,7 @@ arc59_getOrCreateInbox:
 	byte 0x
 
 	// *if0_condition
-	// contracts/arc59.algo.ts:46
+	// contracts/arc59.algo.ts:53
 	// this.inboxes(receiver).exists
 	frame_dig -1 // receiver: Address
 	box_len
@@ -129,7 +129,7 @@ arc59_getOrCreateInbox:
 	bz *if0_end
 
 	// *if0_consequent
-	// contracts/arc59.algo.ts:46
+	// contracts/arc59.algo.ts:53
 	// return this.inboxes(receiver).value;
 	frame_dig -1 // receiver: Address
 	box_get
@@ -137,7 +137,7 @@ arc59_getOrCreateInbox:
 	b *arc59_getOrCreateInbox*return
 
 *if0_end:
-	// contracts/arc59.algo.ts:48
+	// contracts/arc59.algo.ts:55
 	// inbox = sendMethodCall<typeof ControlledAddress.prototype.new>({
 	//       onCompletion: OnCompletion.DeleteApplication,
 	//       approvalProgram: ControlledAddress.approvalProgram(),
@@ -149,17 +149,17 @@ arc59_getOrCreateInbox:
 	method "new()address"
 	itxn_field ApplicationArgs
 
-	// contracts/arc59.algo.ts:49
+	// contracts/arc59.algo.ts:56
 	// onCompletion: OnCompletion.DeleteApplication
 	int 5 // DeleteApplication
 	itxn_field OnCompletion
 
-	// contracts/arc59.algo.ts:50
+	// contracts/arc59.algo.ts:57
 	// approvalProgram: ControlledAddress.approvalProgram()
 	byte b64 CiABATEYFIEGCzEZCI0MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAhAIAEFR98dYgABFCwIkOKAAGxIrIQMQCyIIEAsgGzMgqJgARWHS/qNhoAjgH/0wA=
 	itxn_field ApprovalProgram
 
-	// contracts/arc59.algo.ts:51
+	// contracts/arc59.algo.ts:58
 	// clearStateProgram: ControlledAddress.clearProgram()
 	byte b64 Cg==
 	itxn_field ClearStateProgram
@@ -177,13 +177,13 @@ arc59_getOrCreateInbox:
 	extract 4 0
 	frame_bury 0 // inbox: address
 
-	// contracts/arc59.algo.ts:54
+	// contracts/arc59.algo.ts:61
 	// this.inboxes(receiver).value = inbox
 	frame_dig -1 // receiver: Address
 	frame_dig 0 // inbox: address
 	box_put
 
-	// contracts/arc59.algo.ts:56
+	// contracts/arc59.algo.ts:63
 	// return inbox;
 	frame_dig 0 // inbox: address
 
@@ -192,8 +192,8 @@ arc59_getOrCreateInbox:
 	frame_bury 0
 	retsub
 
-// arc59_getAssetSendInfo(address,uint64)(uint64,uint64)
-*abi_route_arc59_getAssetSendInfo:
+// arc59_getSendAssetInfo(address,uint64)(uint64,uint64,bool,bool)
+*abi_route_arc59_getSendAssetInfo:
 	// The ABI return prefix
 	byte 0x151f7c75
 
@@ -209,202 +209,295 @@ arc59_getOrCreateInbox:
 	==
 	assert
 
-	// execute arc59_getAssetSendInfo(address,uint64)(uint64,uint64)
-	callsub arc59_getAssetSendInfo
+	// execute arc59_getSendAssetInfo(address,uint64)(uint64,uint64,bool,bool)
+	callsub arc59_getSendAssetInfo
 	concat
 	log
 	int 1
 	return
 
-// arc59_getAssetSendInfo(receiver: Address, asset: AssetID): { itxns: uint64; mbr: uint64 }
+// arc59_getSendAssetInfo(receiver: Address, asset: AssetID): SendAssetInfo
 //
 //
 // @param receiver The address to send the asset to
 // @param asset The asset to send
 //
 // @returns The number of itxns sent and the MBR required to send the asset to the receiver
-arc59_getAssetSendInfo:
+arc59_getSendAssetInfo:
 	proto 2 1
 
 	// Push empty bytes after the frame pointer to reserve space for local variables
 	byte 0x
-	dupn 3
+	dupn 5
 
-	// contracts/arc59.algo.ts:67
-	// info: { itxns: uint64; mbr: uint64 } = { itxns: 1, mbr: 0 }
-	byte 0x00000000000000010000000000000000
-	frame_bury 0 // info: { itxns: uint64; mbr: uint64 }
+	// contracts/arc59.algo.ts:74
+	// routerOptedIn = this.app.address.isOptedInToAsset(asset)
+	global CurrentApplicationAddress
+	frame_dig -2 // asset: AssetID
+	asset_holding_get AssetBalance
+	swap
+	pop
+	frame_bury 0 // routerOptedIn: bool
 
-	// *if1_condition
-	// contracts/arc59.algo.ts:69
-	// receiver.isOptedInToAsset(asset)
+	// contracts/arc59.algo.ts:75
+	// receiverOptedIn = receiver.isOptedInToAsset(asset)
 	frame_dig -1 // receiver: Address
 	frame_dig -2 // asset: AssetID
 	asset_holding_get AssetBalance
 	swap
 	pop
+	frame_bury 1 // receiverOptedIn: bool
+
+	// contracts/arc59.algo.ts:76
+	// info: SendAssetInfo = { itxns: 1, mbr: 0, routerOptedIn: routerOptedIn, receiverOptedIn: receiverOptedIn }
+	byte 0x00000000000000010000000000000000
+	byte 0x00
+	int 0
+	frame_dig 0 // routerOptedIn: bool
+	setbit
+	int 1
+	frame_dig 1 // receiverOptedIn: bool
+	setbit
+	concat
+	frame_bury 2 // info: SendAssetInfo
+
+	// *if1_condition
+	// contracts/arc59.algo.ts:78
+	// receiverOptedIn
+	frame_dig 1 // receiverOptedIn: bool
 	bz *if1_end
 
 	// *if1_consequent
-	// contracts/arc59.algo.ts:69
+	// contracts/arc59.algo.ts:78
 	// return info;
-	frame_dig 0 // info: { itxns: uint64; mbr: uint64 }
-	b *arc59_getAssetSendInfo*return
+	frame_dig 2 // info: SendAssetInfo
+	b *arc59_getSendAssetInfo*return
 
 *if1_end:
 	// *if2_condition
-	// contracts/arc59.algo.ts:71
+	// contracts/arc59.algo.ts:80
+	// !routerOptedIn
+	frame_dig 0 // routerOptedIn: bool
+	!
+	bz *if2_end
+
+	// *if2_consequent
+	// contracts/arc59.algo.ts:81
+	// info.mbr += globals.assetOptInMinBalance
+	frame_dig 2 // info: SendAssetInfo
+	store 255 // full array
+	load 255 // full array
+	int 8
+	frame_dig 2 // info: SendAssetInfo
+	store 255 // full array
+	load 255 // full array
+	extract 8 8
+	btoi
+	global AssetOptInMinBalance
+	+
+	itob
+	replace3
+	frame_bury 2 // info: SendAssetInfo
+
+	// contracts/arc59.algo.ts:82
+	// info.itxns += 1
+	frame_dig 2 // info: SendAssetInfo
+	store 255 // full array
+	load 255 // full array
+	int 0
+	frame_dig 2 // info: SendAssetInfo
+	store 255 // full array
+	load 255 // full array
+	extract 0 8
+	btoi
+	int 1
+	+
+	itob
+	replace3
+	frame_bury 2 // info: SendAssetInfo
+
+*if2_end:
+	// *if3_condition
+	// contracts/arc59.algo.ts:85
 	// !this.inboxes(receiver).exists
 	frame_dig -1 // receiver: Address
 	box_len
 	swap
 	pop
 	!
-	bz *if2_end
+	bz *if3_end
 
-	// *if2_consequent
-	// contracts/arc59.algo.ts:75
+	// *if3_consequent
+	// contracts/arc59.algo.ts:89
 	// info.itxns += 4
-	frame_dig 0 // info: { itxns: uint64; mbr: uint64 }
+	frame_dig 2 // info: SendAssetInfo
+	store 255 // full array
+	load 255 // full array
 	int 0
-	frame_dig 0 // info: { itxns: uint64; mbr: uint64 }
+	frame_dig 2 // info: SendAssetInfo
+	store 255 // full array
+	load 255 // full array
 	extract 0 8
 	btoi
 	int 4
 	+
 	itob
 	replace3
-	frame_bury 0 // info: { itxns: uint64; mbr: uint64 }
+	frame_bury 2 // info: SendAssetInfo
 
-	// contracts/arc59.algo.ts:78
+	// contracts/arc59.algo.ts:92
 	// preMBR = globals.currentApplicationAddress.minBalance
 	global CurrentApplicationAddress
 	acct_params_get AcctMinBalance
 	pop
-	frame_bury 1 // preMBR: uint64
+	frame_bury 3 // preMBR: uint64
 
-	// contracts/arc59.algo.ts:79
+	// contracts/arc59.algo.ts:93
 	// this.inboxes(receiver).value = globals.zeroAddress
 	frame_dig -1 // receiver: Address
 	global ZeroAddress
 	box_put
 
-	// contracts/arc59.algo.ts:80
+	// contracts/arc59.algo.ts:94
 	// boxMbrDelta = globals.currentApplicationAddress.minBalance - preMBR
 	global CurrentApplicationAddress
 	acct_params_get AcctMinBalance
 	pop
-	frame_dig 1 // preMBR: uint64
+	frame_dig 3 // preMBR: uint64
 	-
-	frame_bury 2 // boxMbrDelta: uint64
+	frame_bury 4 // boxMbrDelta: uint64
 
-	// contracts/arc59.algo.ts:81
+	// contracts/arc59.algo.ts:95
 	// this.inboxes(receiver).delete()
 	frame_dig -1 // receiver: Address
 	box_del
 
-	// contracts/arc59.algo.ts:84
-	// info.mbr = boxMbrDelta + globals.minBalance + globals.assetOptInMinBalance
-	frame_dig 0 // info: { itxns: uint64; mbr: uint64 }
-	int 8 // headOffset
-	frame_dig 2 // boxMbrDelta: uint64
+	// contracts/arc59.algo.ts:98
+	// info.mbr += boxMbrDelta + globals.minBalance + globals.assetOptInMinBalance
+	frame_dig 2 // info: SendAssetInfo
+	store 255 // full array
+	load 255 // full array
+	int 8
+	frame_dig 2 // info: SendAssetInfo
+	store 255 // full array
+	load 255 // full array
+	extract 8 8
+	btoi
+	frame_dig 4 // boxMbrDelta: uint64
 	global MinBalance
 	+
 	global AssetOptInMinBalance
 	+
+	+
 	itob
 	replace3
-	frame_bury 0 // info: { itxns: uint64; mbr: uint64 }
+	frame_bury 2 // info: SendAssetInfo
 
-	// contracts/arc59.algo.ts:86
+	// contracts/arc59.algo.ts:100
 	// return info;
-	frame_dig 0 // info: { itxns: uint64; mbr: uint64 }
-	b *arc59_getAssetSendInfo*return
+	frame_dig 2 // info: SendAssetInfo
+	b *arc59_getSendAssetInfo*return
 
-*if2_end:
-	// contracts/arc59.algo.ts:89
+*if3_end:
+	// contracts/arc59.algo.ts:103
 	// inbox = this.inboxes(receiver).value
 	frame_dig -1 // receiver: Address
 	box_get
 	assert
-	frame_bury 3 // inbox: address
+	frame_bury 5 // inbox: address
 
-	// *if3_condition
-	// contracts/arc59.algo.ts:91
+	// *if4_condition
+	// contracts/arc59.algo.ts:105
 	// !inbox.isOptedInToAsset(asset)
-	frame_dig 3 // inbox: address
+	frame_dig 5 // inbox: address
 	frame_dig -2 // asset: AssetID
 	asset_holding_get AssetBalance
 	swap
 	pop
 	!
-	bz *if3_end
+	bz *if4_end
 
-	// *if3_consequent
-	// contracts/arc59.algo.ts:93
+	// *if4_consequent
+	// contracts/arc59.algo.ts:107
 	// info.itxns += 1
-	frame_dig 0 // info: { itxns: uint64; mbr: uint64 }
+	frame_dig 2 // info: SendAssetInfo
+	store 255 // full array
+	load 255 // full array
 	int 0
-	frame_dig 0 // info: { itxns: uint64; mbr: uint64 }
+	frame_dig 2 // info: SendAssetInfo
+	store 255 // full array
+	load 255 // full array
 	extract 0 8
 	btoi
 	int 1
 	+
 	itob
 	replace3
-	frame_bury 0 // info: { itxns: uint64; mbr: uint64 }
+	frame_bury 2 // info: SendAssetInfo
 
-	// *if4_condition
-	// contracts/arc59.algo.ts:95
+	// *if5_condition
+	// contracts/arc59.algo.ts:109
 	// !(inbox.balance >= inbox.minBalance + globals.assetOptInMinBalance)
-	frame_dig 3 // inbox: address
+	frame_dig 5 // inbox: address
 	acct_params_get AcctBalance
 	pop
-	frame_dig 3 // inbox: address
+	frame_dig 5 // inbox: address
 	acct_params_get AcctMinBalance
 	pop
 	global AssetOptInMinBalance
 	+
 	>=
 	!
-	bz *if4_end
+	bz *if5_end
 
-	// *if4_consequent
-	// contracts/arc59.algo.ts:97
+	// *if5_consequent
+	// contracts/arc59.algo.ts:111
 	// info.itxns += 1
-	frame_dig 0 // info: { itxns: uint64; mbr: uint64 }
+	frame_dig 2 // info: SendAssetInfo
+	store 255 // full array
+	load 255 // full array
 	int 0
-	frame_dig 0 // info: { itxns: uint64; mbr: uint64 }
+	frame_dig 2 // info: SendAssetInfo
+	store 255 // full array
+	load 255 // full array
 	extract 0 8
 	btoi
 	int 1
 	+
 	itob
 	replace3
-	frame_bury 0 // info: { itxns: uint64; mbr: uint64 }
+	frame_bury 2 // info: SendAssetInfo
 
-	// contracts/arc59.algo.ts:100
-	// info.mbr = globals.assetOptInMinBalance
-	frame_dig 0 // info: { itxns: uint64; mbr: uint64 }
-	int 8 // headOffset
+	// contracts/arc59.algo.ts:114
+	// info.mbr += globals.assetOptInMinBalance
+	frame_dig 2 // info: SendAssetInfo
+	store 255 // full array
+	load 255 // full array
+	int 8
+	frame_dig 2 // info: SendAssetInfo
+	store 255 // full array
+	load 255 // full array
+	extract 8 8
+	btoi
 	global AssetOptInMinBalance
+	+
 	itob
 	replace3
-	frame_bury 0 // info: { itxns: uint64; mbr: uint64 }
+	frame_bury 2 // info: SendAssetInfo
+
+*if5_end:
 
 *if4_end:
-
-*if3_end:
-	// contracts/arc59.algo.ts:104
+	// contracts/arc59.algo.ts:118
 	// return info;
-	frame_dig 0 // info: { itxns: uint64; mbr: uint64 }
+	frame_dig 2 // info: SendAssetInfo
 
-*arc59_getAssetSendInfo*return:
+*arc59_getSendAssetInfo*return:
 	// set the subroutine return value
 	frame_bury 0
 
 	// pop all local variables from the stack
-	popn 3
+	popn 5
 	retsub
 
 // arc59_sendAsset(axfer,address)address
@@ -452,7 +545,7 @@ arc59_sendAsset:
 	byte 0x
 	dupn 2
 
-	// contracts/arc59.algo.ts:116
+	// contracts/arc59.algo.ts:130
 	// verifyAssetTransferTxn(axfer, {
 	//       assetReceiver: this.app.address,
 	//     })
@@ -463,8 +556,8 @@ arc59_sendAsset:
 	==
 	assert
 
-	// *if5_condition
-	// contracts/arc59.algo.ts:121
+	// *if6_condition
+	// contracts/arc59.algo.ts:135
 	// receiver.isOptedInToAsset(axfer.xferAsset)
 	frame_dig -2 // receiver: Address
 	frame_dig -1 // axfer: AssetTransferTxn
@@ -472,10 +565,10 @@ arc59_sendAsset:
 	asset_holding_get AssetBalance
 	swap
 	pop
-	bz *if5_end
+	bz *if6_end
 
-	// *if5_consequent
-	// contracts/arc59.algo.ts:122
+	// *if6_consequent
+	// contracts/arc59.algo.ts:136
 	// sendAssetTransfer({
 	//         assetReceiver: receiver,
 	//         assetAmount: axfer.assetAmount,
@@ -485,18 +578,18 @@ arc59_sendAsset:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:123
+	// contracts/arc59.algo.ts:137
 	// assetReceiver: receiver
 	frame_dig -2 // receiver: Address
 	itxn_field AssetReceiver
 
-	// contracts/arc59.algo.ts:124
+	// contracts/arc59.algo.ts:138
 	// assetAmount: axfer.assetAmount
 	frame_dig -1 // axfer: AssetTransferTxn
 	gtxns AssetAmount
 	itxn_field AssetAmount
 
-	// contracts/arc59.algo.ts:125
+	// contracts/arc59.algo.ts:139
 	// xferAsset: axfer.xferAsset
 	frame_dig -1 // axfer: AssetTransferTxn
 	gtxns XferAsset
@@ -509,13 +602,13 @@ arc59_sendAsset:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts/arc59.algo.ts:128
+	// contracts/arc59.algo.ts:142
 	// return receiver;
 	frame_dig -2 // receiver: Address
 	b *arc59_sendAsset*return
 
-*if5_end:
-	// contracts/arc59.algo.ts:131
+*if6_end:
+	// contracts/arc59.algo.ts:145
 	// inboxExisted = this.inboxes(receiver).exists
 	frame_dig -2 // receiver: Address
 	box_len
@@ -523,14 +616,14 @@ arc59_sendAsset:
 	pop
 	frame_bury 0 // inboxExisted: bool
 
-	// contracts/arc59.algo.ts:132
+	// contracts/arc59.algo.ts:146
 	// inbox = this.arc59_getOrCreateInbox(receiver)
 	frame_dig -2 // receiver: Address
 	callsub arc59_getOrCreateInbox
 	frame_bury 1 // inbox: address
 
-	// *if6_condition
-	// contracts/arc59.algo.ts:134
+	// *if7_condition
+	// contracts/arc59.algo.ts:148
 	// !inbox.isOptedInToAsset(axfer.xferAsset)
 	frame_dig 1 // inbox: address
 	frame_dig -1 // axfer: AssetTransferTxn
@@ -539,32 +632,32 @@ arc59_sendAsset:
 	swap
 	pop
 	!
-	bz *if6_end
+	bz *if7_end
 
-	// *if6_consequent
-	// contracts/arc59.algo.ts:135
+	// *if7_consequent
+	// contracts/arc59.algo.ts:149
 	// inboxMbrDelta = globals.assetOptInMinBalance
 	global AssetOptInMinBalance
 	frame_bury 2 // inboxMbrDelta: uint64
 
-	// *if7_condition
-	// contracts/arc59.algo.ts:136
+	// *if8_condition
+	// contracts/arc59.algo.ts:150
 	// !inboxExisted
 	frame_dig 0 // inboxExisted: bool
 	!
-	bz *if7_end
+	bz *if8_end
 
-	// *if7_consequent
-	// contracts/arc59.algo.ts:136
+	// *if8_consequent
+	// contracts/arc59.algo.ts:150
 	// inboxMbrDelta += globals.minBalance
 	frame_dig 2 // inboxMbrDelta: uint64
 	global MinBalance
 	+
 	frame_bury 2 // inboxMbrDelta: uint64
 
-*if7_end:
-	// *if8_condition
-	// contracts/arc59.algo.ts:139
+*if8_end:
+	// *if9_condition
+	// contracts/arc59.algo.ts:153
 	// inbox.balance < inbox.minBalance + inboxMbrDelta
 	frame_dig 1 // inbox: address
 	acct_params_get AcctBalance
@@ -575,10 +668,10 @@ arc59_sendAsset:
 	frame_dig 2 // inboxMbrDelta: uint64
 	+
 	<
-	bz *if8_end
+	bz *if9_end
 
-	// *if8_consequent
-	// contracts/arc59.algo.ts:140
+	// *if9_consequent
+	// contracts/arc59.algo.ts:154
 	// sendPayment({
 	//           receiver: inbox,
 	//           amount: inboxMbrDelta,
@@ -587,12 +680,12 @@ arc59_sendAsset:
 	int pay
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:141
+	// contracts/arc59.algo.ts:155
 	// receiver: inbox
 	frame_dig 1 // inbox: address
 	itxn_field Receiver
 
-	// contracts/arc59.algo.ts:142
+	// contracts/arc59.algo.ts:156
 	// amount: inboxMbrDelta
 	frame_dig 2 // inboxMbrDelta: uint64
 	itxn_field Amount
@@ -604,8 +697,8 @@ arc59_sendAsset:
 	// Submit inner transaction
 	itxn_submit
 
-*if8_end:
-	// contracts/arc59.algo.ts:147
+*if9_end:
+	// contracts/arc59.algo.ts:161
 	// sendAssetTransfer({
 	//         sender: inbox,
 	//         assetReceiver: inbox,
@@ -616,22 +709,22 @@ arc59_sendAsset:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:148
+	// contracts/arc59.algo.ts:162
 	// sender: inbox
 	frame_dig 1 // inbox: address
 	itxn_field Sender
 
-	// contracts/arc59.algo.ts:149
+	// contracts/arc59.algo.ts:163
 	// assetReceiver: inbox
 	frame_dig 1 // inbox: address
 	itxn_field AssetReceiver
 
-	// contracts/arc59.algo.ts:150
+	// contracts/arc59.algo.ts:164
 	// assetAmount: 0
 	int 0
 	itxn_field AssetAmount
 
-	// contracts/arc59.algo.ts:151
+	// contracts/arc59.algo.ts:165
 	// xferAsset: axfer.xferAsset
 	frame_dig -1 // axfer: AssetTransferTxn
 	gtxns XferAsset
@@ -644,8 +737,8 @@ arc59_sendAsset:
 	// Submit inner transaction
 	itxn_submit
 
-*if6_end:
-	// contracts/arc59.algo.ts:156
+*if7_end:
+	// contracts/arc59.algo.ts:170
 	// sendAssetTransfer({
 	//       assetReceiver: inbox,
 	//       assetAmount: axfer.assetAmount,
@@ -655,18 +748,18 @@ arc59_sendAsset:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:157
+	// contracts/arc59.algo.ts:171
 	// assetReceiver: inbox
 	frame_dig 1 // inbox: address
 	itxn_field AssetReceiver
 
-	// contracts/arc59.algo.ts:158
+	// contracts/arc59.algo.ts:172
 	// assetAmount: axfer.assetAmount
 	frame_dig -1 // axfer: AssetTransferTxn
 	gtxns AssetAmount
 	itxn_field AssetAmount
 
-	// contracts/arc59.algo.ts:159
+	// contracts/arc59.algo.ts:173
 	// xferAsset: axfer.xferAsset
 	frame_dig -1 // axfer: AssetTransferTxn
 	gtxns XferAsset
@@ -679,7 +772,7 @@ arc59_sendAsset:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts/arc59.algo.ts:162
+	// contracts/arc59.algo.ts:176
 	// return inbox;
 	frame_dig 1 // inbox: address
 
@@ -713,14 +806,14 @@ arc59_claim:
 	// Push empty bytes after the frame pointer to reserve space for local variables
 	byte 0x
 
-	// contracts/arc59.algo.ts:171
+	// contracts/arc59.algo.ts:185
 	// inbox = this.inboxes(this.txn.sender).value
 	txn Sender
 	box_get
 	assert
 	frame_bury 0 // inbox: address
 
-	// contracts/arc59.algo.ts:173
+	// contracts/arc59.algo.ts:187
 	// sendAssetTransfer({
 	//       sender: inbox,
 	//       assetReceiver: this.txn.sender,
@@ -732,17 +825,17 @@ arc59_claim:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:174
+	// contracts/arc59.algo.ts:188
 	// sender: inbox
 	frame_dig 0 // inbox: address
 	itxn_field Sender
 
-	// contracts/arc59.algo.ts:175
+	// contracts/arc59.algo.ts:189
 	// assetReceiver: this.txn.sender
 	txn Sender
 	itxn_field AssetReceiver
 
-	// contracts/arc59.algo.ts:176
+	// contracts/arc59.algo.ts:190
 	// assetAmount: inbox.assetBalance(asa)
 	frame_dig 0 // inbox: address
 	frame_dig -1 // asa: AssetID
@@ -750,12 +843,12 @@ arc59_claim:
 	pop
 	itxn_field AssetAmount
 
-	// contracts/arc59.algo.ts:177
+	// contracts/arc59.algo.ts:191
 	// xferAsset: asa
 	frame_dig -1 // asa: AssetID
 	itxn_field XferAsset
 
-	// contracts/arc59.algo.ts:178
+	// contracts/arc59.algo.ts:192
 	// assetCloseTo: this.txn.sender
 	txn Sender
 	itxn_field AssetCloseTo
@@ -767,7 +860,7 @@ arc59_claim:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts/arc59.algo.ts:181
+	// contracts/arc59.algo.ts:195
 	// sendPayment({
 	//       sender: inbox,
 	//       receiver: this.txn.sender,
@@ -777,17 +870,17 @@ arc59_claim:
 	int pay
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:182
+	// contracts/arc59.algo.ts:196
 	// sender: inbox
 	frame_dig 0 // inbox: address
 	itxn_field Sender
 
-	// contracts/arc59.algo.ts:183
+	// contracts/arc59.algo.ts:197
 	// receiver: this.txn.sender
 	txn Sender
 	itxn_field Receiver
 
-	// contracts/arc59.algo.ts:184
+	// contracts/arc59.algo.ts:198
 	// amount: inbox.balance - inbox.minBalance
 	frame_dig 0 // inbox: address
 	acct_params_get AcctBalance
@@ -829,14 +922,14 @@ arc59_reject:
 	// Push empty bytes after the frame pointer to reserve space for local variables
 	byte 0x
 
-	// contracts/arc59.algo.ts:195
+	// contracts/arc59.algo.ts:209
 	// inbox = this.inboxes(this.txn.sender).value
 	txn Sender
 	box_get
 	assert
 	frame_bury 0 // inbox: address
 
-	// contracts/arc59.algo.ts:197
+	// contracts/arc59.algo.ts:211
 	// sendAssetTransfer({
 	//       sender: inbox,
 	//       assetReceiver: asa.creator,
@@ -848,19 +941,19 @@ arc59_reject:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:198
+	// contracts/arc59.algo.ts:212
 	// sender: inbox
 	frame_dig 0 // inbox: address
 	itxn_field Sender
 
-	// contracts/arc59.algo.ts:199
+	// contracts/arc59.algo.ts:213
 	// assetReceiver: asa.creator
 	frame_dig -1 // asa: AssetID
 	asset_params_get AssetCreator
 	pop
 	itxn_field AssetReceiver
 
-	// contracts/arc59.algo.ts:200
+	// contracts/arc59.algo.ts:214
 	// assetAmount: inbox.assetBalance(asa)
 	frame_dig 0 // inbox: address
 	frame_dig -1 // asa: AssetID
@@ -868,12 +961,12 @@ arc59_reject:
 	pop
 	itxn_field AssetAmount
 
-	// contracts/arc59.algo.ts:201
+	// contracts/arc59.algo.ts:215
 	// xferAsset: asa
 	frame_dig -1 // asa: AssetID
 	itxn_field XferAsset
 
-	// contracts/arc59.algo.ts:202
+	// contracts/arc59.algo.ts:216
 	// assetCloseTo: asa.creator
 	frame_dig -1 // asa: AssetID
 	asset_params_get AssetCreator
@@ -887,7 +980,7 @@ arc59_reject:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts/arc59.algo.ts:205
+	// contracts/arc59.algo.ts:219
 	// sendPayment({
 	//       sender: inbox,
 	//       receiver: this.txn.sender,
@@ -897,17 +990,17 @@ arc59_reject:
 	int pay
 	itxn_field TypeEnum
 
-	// contracts/arc59.algo.ts:206
+	// contracts/arc59.algo.ts:220
 	// sender: inbox
 	frame_dig 0 // inbox: address
 	itxn_field Sender
 
-	// contracts/arc59.algo.ts:207
+	// contracts/arc59.algo.ts:221
 	// receiver: this.txn.sender
 	txn Sender
 	itxn_field Receiver
 
-	// contracts/arc59.algo.ts:208
+	// contracts/arc59.algo.ts:222
 	// amount: inbox.balance - inbox.minBalance
 	frame_dig 0 // inbox: address
 	acct_params_get AcctBalance
@@ -956,7 +1049,7 @@ arc59_reject:
 arc59_getInbox:
 	proto 1 1
 
-	// contracts/arc59.algo.ts:220
+	// contracts/arc59.algo.ts:234
 	// return this.inboxes(receiver).exists ? this.inboxes(receiver).value : globals.zeroAddress;
 	frame_dig -1 // receiver: Address
 	box_len
@@ -983,11 +1076,11 @@ arc59_getInbox:
 *call_NoOp:
 	method "arc59_optRouterIn(uint64)void"
 	method "arc59_getOrCreateInbox(address)address"
-	method "arc59_getAssetSendInfo(address,uint64)(uint64,uint64)"
+	method "arc59_getSendAssetInfo(address,uint64)(uint64,uint64,bool,bool)"
 	method "arc59_sendAsset(axfer,address)address"
 	method "arc59_claim(uint64)void"
 	method "arc59_reject(uint64)void"
 	method "arc59_getInbox(address)address"
 	txna ApplicationArgs 0
-	match *abi_route_arc59_optRouterIn *abi_route_arc59_getOrCreateInbox *abi_route_arc59_getAssetSendInfo *abi_route_arc59_sendAsset *abi_route_arc59_claim *abi_route_arc59_reject *abi_route_arc59_getInbox
+	match *abi_route_arc59_optRouterIn *abi_route_arc59_getOrCreateInbox *abi_route_arc59_getSendAssetInfo *abi_route_arc59_sendAsset *abi_route_arc59_claim *abi_route_arc59_reject *abi_route_arc59_getInbox
 	err

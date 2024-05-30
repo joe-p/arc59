@@ -17,7 +17,20 @@ async function sendAsset(
 ) {
   const arc59RouterAddress = (await appClient.appClient.getAppReference()).appAddress;
 
-  const [itxns, mbr] = (await appClient.arc59GetAssetSendInfo({ asset: assetId, receiver })).return!;
+  const [itxns, mbr, routerOptedIn, receiverOptedIn] = (
+    await appClient.arc59GetSendAssetInfo({ asset: assetId, receiver })
+  ).return!;
+
+  if (receiverOptedIn) {
+    await algorand.send.assetTransfer({
+      sender,
+      receiver,
+      assetId,
+      amount: 1n,
+    });
+
+    return;
+  }
 
   const composer = appClient.compose();
 
@@ -39,20 +52,7 @@ async function sendAsset(
   });
 
   // If the router is not opted in, call arc59OptRouterIn to do so
-  try {
-    // getAssetInformation throws an error if the account is not opted in
-    await algorand.account.getAssetInformation(arc59RouterAddress, assetId);
-  } catch (e) {
-    const fundRouterTxn = await algorand.transactions.payment({
-      sender,
-      receiver: arc59RouterAddress,
-      amount: algokit.microAlgos(200_000),
-      extraFee: algokit.microAlgos(1_000),
-    });
-
-    composer.addTransaction({ transaction: fundRouterTxn, signer });
-    composer.arc59OptRouterIn({ asa: assetId });
-  }
+  if (!routerOptedIn) composer.arc59OptRouterIn({ asa: assetId });
 
   // Disable resource population to ensure that our manually defined resources are correct
   algokit.Config.configure({ populateAppCallResources: false });
@@ -120,15 +120,16 @@ describe('Arc59', () => {
 
     await appClient.create.createApplication({});
 
-    await appClient.appClient.fundAppAccount({ amount: algokit.microAlgos(200_000) });
+    await appClient.appClient.fundAppAccount({ amount: algokit.microAlgos(100_000) });
   });
 
   test('routerOptIn', async () => {
+    await appClient.appClient.fundAppAccount({ amount: algokit.microAlgos(100_000) });
     await appClient.arc59OptRouterIn({ asa: assetOne }, { sendParams: { fee: algokit.microAlgos(2_000) } });
   });
 
-  test('Brand new account getAssetSendInfo', async () => {
-    const res = await appClient.arc59GetAssetSendInfo({ asset: assetOne, receiver: algosdk.generateAccount().addr });
+  test('Brand new account getSendAssetInfo', async () => {
+    const res = await appClient.arc59GetSendAssetInfo({ asset: assetOne, receiver: algosdk.generateAccount().addr });
 
     const itxns = res.return![0];
     const mbr = res.return![1];
