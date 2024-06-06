@@ -55,7 +55,7 @@
       ],
       "returns": {
         "type": "(uint64,uint64,bool,bool)",
-        "desc": "The number of itxns sent and the MBR required to send the asset to the receiver"
+        "desc": "Returns the following information for sending an asset:The number of itxns required, the MBR required, whether the router is opted in, and whether the receiver is opted in"
       }
     },
     {
